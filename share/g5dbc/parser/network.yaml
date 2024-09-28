@@ -1,0 +1,12 @@
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)\.(\d+)\.(src|dst)_node.(\w+)
+  - - '{0}_{1}{2}_{3}_{4}'
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)
+  - - '{0}_{1}'
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)\.(\d+)
+  - - '{0}_{1}{2}'
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)\.(\d+)\.(\w+)
+  - - '{0}_{1}{2}_{3}'
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)\.(\d+)\.(\w+)\.(\d+)
+  - - '{0}_{1}{2}_{3}{4}'
+- - system\.interconnect\.ruby_system\.(network)\.(\w+)\.(\d+)\.(\w+)\.(\d+)\.(\w+)\.(\d+)
+  - - '{0}_{1}{2}_{3}{4}_{5}{6}'

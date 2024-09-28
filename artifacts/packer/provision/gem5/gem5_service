@@ -1,0 +1,57 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          gem5
+# Required-Start:    mountdevsubfs
+# Required-Stop:
+# X-Start-Before:    checkroot
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Run gem5 workload
+# Description:       Run gem5 workload
+### END INIT INFO
+
+# GEM5 init script
+SCRIPT=/tmp/gem5_script
+MOUNT2=/benchmarks
+
+do_start () {
+	# Mount root partition
+	/bin/mount -n -o remount,rw /
+	# Mount benchmarks disk if found
+	DISK2=$(/bin/lsblk -dpno name | sort | sed -n 2p)
+	if [ -n "$DISK2" ]; then
+		echo "Mounting second disk $DISK2 to $MOUNT2"
+		/bin/mount -o rw $DISK2 $MOUNT2
+	fi
+	# Read script from the host system
+	/sbin/m5 readfile > $SCRIPT
+	if [ -s $SCRIPT ]; then
+		echo "Executing $SCRIPT"
+		# Make user script executable
+		chmod 755 $SCRIPT
+		# Execute user script
+		exec su root -c $SCRIPT
+		# End simulation
+		/sbin/m5 exit
+	fi
+	# Remount root partition read-only
+	/bin/mount -n -o remount,ro /
+	exit 0
+}
+
+case "$1" in
+	start)
+		do_start
+		;;
+	restart|reload|force-reload)
+		echo "Error: argument '$1' not supported" >&2
+		exit 3
+		;;
+	stop|status)
+		# No-op
+		;;
+	*)
+		echo "Usage: $0 start|stop" >&2
+		exit 3
+		;;
+esac

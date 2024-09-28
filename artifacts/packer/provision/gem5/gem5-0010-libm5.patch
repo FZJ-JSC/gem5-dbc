@@ -1,0 +1,49 @@
+diff --git a/util/m5/src/Makefile b/util/m5/src/Makefile
+new file mode 100644
+index 0000000..6dccb53
+--- /dev/null
++++ b/util/m5/src/Makefile
+@@ -0,0 +1,43 @@
++GEM5_DIST =
++
++ARCH = arm64
++
++CFLAGS  = -O2 -I$(GEM5_DIST)/include -I$(GEM5_DIST)/util/m5/src
++LDFLAGS = -no-pie -static
++
++COMMAND_OBJS = command/addsymbol.o command/checkpoint.o command/dumpresetstats.o \
++	       command/dumpstats.o command/exit.o command/fail.o command/sum.o command/initparam.o \
++	       command/loadsymbol.o command/readfile.o command/resetstats.o command/writefile.o
++
++BIN_OBJS = inst.o addr.o semi.o args.o call_type.o command.o m5.o m5_mmap.o usage.o $(COMMAND_OBJS)
++LIB_OBJS = m5_mmap.o m5op.o m5op_addr.o m5op_semi.o
++
++all: libm5.a m5
++
++%.o: abi/$(ARCH)/%.S
++	$(CXX) $(CFLAGS) -o $@ -c $<
++
++addr.o: call_type/addr.cc
++	$(CXX) $(CFLAGS) -DCALL_TYPE_IS_DEFAULT=false -o $@ -c $<
++
++inst.o: call_type/inst.cc
++	$(CXX) $(CFLAGS) -DCALL_TYPE_IS_DEFAULT=true  -o $@ -c $<
++
++semi.o: call_type/semi.cc
++	$(CXX) $(CFLAGS) -DCALL_TYPE_IS_DEFAULT=false -o $@ -c $<
++
++%.o: %.c
++	$(CC) $(CFLAGS) -o $@ -c $<
++
++%.o: %.cc
++	$(CXX) $(CFLAGS) -o $@ -c $<
++
++libm5.a: $(LIB_OBJS)
++	$(AR) rcs $@ $^
++
++m5: $(BIN_OBJS) libm5.a
++	$(CXX)  -o $@ $(LDFLAGS) $^
++
++clean:
++	rm -f *.o *.a m5 command/*.o
++

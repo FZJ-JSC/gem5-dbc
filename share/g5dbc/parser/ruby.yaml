@@ -1,0 +1,8 @@
+- - system\.interconnect\.(rnf|hnf|snf)\.?(\d+)?\.(ctrl)\.(\w+)
+  - - '{0}{1}_{2}_{3}'
+- - system\.interconnect\.(rnf|hnf|snf)\.?(\d+)?\.(ctrl)\.(\w+)\.(\w+)
+  - - '{0}{1}_{2}_{3}_{4}'
+- - system\.interconnect\.(rnf)\.?(\d+)?\.(d|i|l2)cache\.(\w+)\.(\w+)
+  - - '{0}{1}_{2}cache_{3}_{4}'
+- - system\.interconnect\.(rnf)\.?(\d+)?\.(d|i|l2)cache\.(\w+)\.(\w+)\.(\w+)
+  - - '{0}{1}_{2}cache_{3}_{4}_{5}'

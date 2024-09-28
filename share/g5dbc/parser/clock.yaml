@@ -1,0 +1,6 @@
+- - (system)\.clk_domain\.(clock)
+  - - '{0}_{1}'
+- - system\.(interconnect|cpus)\.clk_domain\.(clock)
+  - - '{0}_{1}'
+- - (sim|host)(Seconds|Ticks|Freq|Insts|Ops|TickRate|Memory|InstRate|OpRate)
+  - - '{0}{1}'
