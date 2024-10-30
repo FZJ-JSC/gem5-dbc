@@ -47,6 +47,6 @@ source "qemu" "debian" {
 
   ssh_username = "root"
   ssh_password = "root"
-  ssh_timeout  = "120m"
+  ssh_timeout  = "150m"
   shutdown_command = "/sbin/poweroff"  
 }

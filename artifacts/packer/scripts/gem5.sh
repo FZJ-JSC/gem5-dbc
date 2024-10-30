@@ -1,6 +1,7 @@
 #!/bin/bash
 
 PRVDIR=/tmp/provision/gem5
+
 SRCDIR=/root/sources
 BINDIR=/root/binaries
 
@@ -20,9 +21,9 @@ git -C $SRCDIR clone --depth 1 --branch $GEM5_VER $GEM5_GIT
 ## Apply patch
 git -C $SRCDIR/gem5 apply $PRVDIR/gem5-0010-libm5.patch
 ## Compile bootloader
-make -C $SRCDIR/gem5/system/arm/bootloader/arm64 -f makefile
+make -C $SRCDIR/gem5/system/arm/bootloader/arm64 -f makefile -j$(nproc)
 ## Compile m5 utility
-make GEM5_DIST=$SRCDIR/gem5 -C $SRCDIR/gem5/util/m5/src -f Makefile
+make GEM5_DIST=$SRCDIR/gem5 -C $SRCDIR/gem5/util/m5/src -f Makefile -j$(nproc)
 ## Install binaries
 install -D -m 0755 $SRCDIR/gem5/util/m5/src/m5       /sbin/m5
 install -D -m 0755 $SRCDIR/gem5/util/m5/src/libm5.a  /usr/lib/libm5.a

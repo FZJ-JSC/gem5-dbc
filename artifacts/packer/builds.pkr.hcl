@@ -11,8 +11,10 @@ build {
   provisioner "shell" {
     scripts = [
       "${path.root}/scripts/gem5.sh",
-      "${path.root}/scripts/mini_stream.sh",
       "${path.root}/scripts/linux.sh",
+      "${path.root}/scripts/mini_stream.sh",
+      "${path.root}/scripts/ietubench.sh",
+      "${path.root}/scripts/system.sh",
     ]
   }
 
@@ -22,7 +24,7 @@ build {
     direction = "download"
   }
 
-  provisioner "shell-local" {
+  post-processor "shell-local" {
     scripts = [
       "${path.root}/scripts/artifacts.sh",
     ]
