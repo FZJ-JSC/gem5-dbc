@@ -1,0 +1,257 @@
+simulation:
+  fs_mode: true
+  checkpoint:
+    cpu:
+      model: AtomicSimple
+
+system:
+  num_cpus: 16
+  num_slcs_per_cpu: 1
+  clock: 1.6GHz
+  voltage: 1.0V
+  model: VExpress_GEM5_V2
+
+cpu:
+  clock: 2.4GHz
+
+  have_sve: true
+
+  sve_vl: 256
+
+  model: [AtomicSimple, R_CPU]
+  branch_predictor: BiMode
+
+  R_CPU:
+    fetchWidth: 12
+    issueWidth: 12
+    decodeWidth: 12
+    renameWidth: 12
+    fetchBufferSize: 64
+    LQEntries: 260
+    SQEntries: 260
+    LSQDepCheckShift: 0
+    numIQEntries: 120
+    numPhysVecPredRegs: 64
+    numPhysVecRegs: 364
+    numROBEntries: 800 
+    renameToIEWDelay: 2
+    backComSize: 7
+    forwardComSize: 7
+
+memory:
+  - model: BwLatCtrl
+    size: 3GB
+    channels: 1
+    ctrl_config: 
+      sampling_window: 1000
+      curves_path: <curves-path> 
+
+caches:
+  cache_line_size: 64
+
+  L1I:
+    size: 64kB
+    assoc: 4
+    latency:
+      tag: 1
+      data: 1
+      response: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 4
+      unify_repl_TBEs: False
+      alloc_on_seq_acc_load:  True
+      alloc_on_seq_acc_store: True
+      alloc_on_seq_line_write: False
+
+  L1D:
+    size: 64kB
+    assoc: 4
+    latency:
+      tag: 1
+      data: 2
+      response: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 4
+      unify_repl_TBEs: False
+      alloc_on_seq_acc_load:  True
+      alloc_on_seq_acc_store: True
+      alloc_on_seq_line_write: False
+    classic:
+      mshrs: 24
+      tgts_per_mshr: 16
+      write_buffers: 24
+
+  WalkCache:
+    size: 1kB
+    assoc: 8
+    latency:
+      tag: 4
+      data: 4
+      response: 4
+
+  L2:
+    active: Yes
+    size: 1MB
+    assoc: 8
+    clusivity: mostly_incl
+    latency:
+      tag: 2
+      data: 4
+      response: 4
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 16
+      unify_repl_TBEs: False
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+    xbar_width: 64
+
+    prefetcher:
+      selected: None
+
+      Tagged:
+        degree: 8
+        distance: 9
+        latency: 1
+        queue_size: 64
+        max_prefetch_requests_with_pending_translation: 32
+        queue_squash: true
+        queue_filter: true
+        cache_snoop: false
+        tag_prefetch: true
+        throttle_control_percentage: 0
+
+      AMPM:
+        limit_stride: 0
+        start_degree: 4
+        hot_zone_size: 2kB
+        access_map_table_entries: 256
+        access_map_table_assoc: 8
+        high_coverage_threshold: 0.25
+        low_coverage_threshold: 0.125
+        high_accuracy_threshold: 0.5
+        low_accuracy_threshold: 0.25
+        high_cache_hit_threshold: 0.875
+        low_cache_hit_threshold: 0.75
+        epoch_cycles: 256000
+        offchip_memory_latency: 30ns
+        latency: 1
+        queue_size: 64
+        max_prefetch_requests_with_pending_translation: 32
+        queue_squash: true
+        queue_filter: true
+        cache_snoop: false
+        tag_prefetch: true
+        throttle_control_percentage: 0
+
+      BO:
+        score_max: 31
+        round_max: 100
+        bad_score: 10
+        rr_size: 64
+        tag_bits: 12
+        offset_list_size: 46
+        negative_offsets_enable: true
+        delay_queue_enable: true
+        delay_queue_size: 15
+        delay_queue_cycles: 60
+
+  SLC:
+    size: 1MB
+    assoc: 16
+    clusivity: mostly_excl
+    latency:
+      tag: 2
+      data: 10
+      response: 10
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 1
+      unify_repl_TBEs: False
+      enable_DMT: True
+      enable_DCT: True
+      allow_SD: True
+      # MOESI / Mostly inclusive for shared / Exclusive for unique
+      alloc_on_readshared: True
+      alloc_on_readunique: False
+      alloc_on_readonce: True
+      alloc_on_writeback: True
+      dealloc_on_unique: True
+      dealloc_on_shared: False
+      dealloc_backinv_unique: False
+      dealloc_backinv_shared: False
+
+    prefetcher:
+      selected: None
+      configuration:
+        Stride:
+          degree: 8
+
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 12
+      write_buffers: 32
+    bandwidth: 64GB
+
+NOC:
+  active: Yes
+  clock: 2GHz
+
+  network:
+    data_width: 64
+    model: garnet
+    link_vnet_support: [[0],[1],[2],[3]]
+    garnet:
+      vcs_per_vnet: 4
+      routing_algorithm: 0
+      # network-level deadlock threshold
+      deadlock_threshold: 50000
+      use_link_bridges: False
+    simple:
+      link_bandwidth: 64
+
+  topology:
+    router_latency: 1
+    mesh_link_latency: 1
+    node_link_latency: 1
+    model: Mesh_NOC
+    Mesh_NOC:
+    # 12 13 14 15
+    #  8  9 10 11
+    #  4  5  6  7
+    #  0  1  2  3
+      dim : [4,4]
+      numa:
+        0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  protocol:
+    model: CHI
+    MOESI_CMP_directory:
+      num-l2caches: 1
+    CHI:
+      nodes:
+        RNF:
+          single_router: Yes
+          routers: [4, 5, 6, 7, 8, 9, 10, 11]
+        HNF:
+          routers: [4, 5, 6, 7, 8, 9, 10, 11]
+        SNF_Mem:
+          routers:
+            - [2]
+        # Applies to CHI_SNF_BootMem and possibly other non-main memories
+        SNF_IO:
+          routers: [13]
+        # Applies to CHI_RNI_DMA and CHI_RNI_IO
+        RNI_IO:
+          routers: [14,15]

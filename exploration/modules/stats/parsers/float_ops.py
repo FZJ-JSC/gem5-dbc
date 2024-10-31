@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec 12 15:13:47 2019
+
+@author: carlos
+"""
+
+def float_ops(instrunction: str, simdw: int = 4) -> int:
+    ninst = {
+        'total' : 0,
+        'No_OpClass' : 0,
+        'IntAlu' : 0,
+        'IntMult' : 0,
+        'IntDiv' : 0,
+        'FloatAdd' : 1,
+        'FloatCmp' : 0,
+        'FloatCvt' : 0,
+        'FloatMult' : 1,
+        'FloatMultAcc' : 2,
+        'FloatDiv' : 1,
+        'FloatMisc' : 0,
+        'FloatSqrt' : 1,
+        'SimdAdd' : 0,
+        'SimdAddAcc' : 0,
+        'SimdAlu' : 0,
+        'SimdCmp' : 0,
+        'SimdCvt' : 0,
+        'SimdMisc' : 0,
+        'SimdMult' : 0,
+        'SimdMultAcc' : 0,
+        'SimdShift' : 0,
+        'SimdShiftAcc' : 0,
+        'SimdDiv' : 0,
+        'SimdSqrt' : 0,
+        'SimdFloatAdd' : 1*simdw,
+        'SimdFloatAlu' : 1*simdw,
+        'SimdFloatCmp' : 0,
+        'SimdFloatCvt' : 0,
+        'SimdFloatDiv' : 1*simdw,
+        'SimdFloatMisc' : 0,
+        'SimdFloatMult' : 1*simdw,
+        'SimdFloatMultAcc' : 2*simdw,
+        'SimdFloatSqrt' :    1*simdw,
+        'SimdReduceAdd' : 0,
+        'SimdReduceAlu' : 0,
+        'SimdReduceCmp' : 0,
+        'SimdFloatReduceAdd' : 1*simdw,
+        'SimdFloatReduceCmp' : 1*simdw,
+        'SimdAes' : 0,
+        'SimdAesMix': 0,
+        'SimdSha1Hash' : 0,
+        'SimdSha1Hash2': 0,
+        'SimdSha256Hash': 0,
+        'SimdSha256Hash2': 0,
+        'SimdShaSigma2': 0,
+        'SimdShaSigma3': 0,
+        'SimdPredAlu' : 0,
+        'MemRead' : 0,
+        'MemWrite' : 0,
+        'FloatMemRead' : 0,
+        'FloatMemWrite' : 0,
+        'IprAccess' : 0,
+        'InstPrefetch' : 0,
+    }
+    return ninst[instrunction]

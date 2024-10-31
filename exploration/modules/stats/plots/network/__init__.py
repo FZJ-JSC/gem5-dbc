@@ -1,0 +1,8 @@
+from modules.stats.plots.network.network import write_network_latency_plots
+from modules.stats.plots.network.router_latencies import write_router_latency_plots
+from modules.stats.plots.network.router_to_router import write_router_to_router_latency_plots
+
+from modules.stats.plots.network.assignment import write_router_assignment_plots
+from modules.stats.plots.network.assignment import write_niface_assignment_plots
+
+from modules.stats.plots.network.heatmaps import write_network_heatmaps

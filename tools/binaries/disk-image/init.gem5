@@ -1,0 +1,25 @@
+#!/bin/sh
+set -ex
+mount -t proc - /proc
+mount -t sysfs - /sys
+mount -t debugfs - /sys/kernel/debug/
+
+#/sbin/m5 checkpoint
+for DEV in /dev/sdb1 /dev/sdb /dev/vdb1 /dev/vdb; do
+  if [ -e "${DEV}" ]; then
+    mount "${DEV}" /data
+    break
+  fi
+done
+f=/tmp/script
+/sbin/m5 readfile > "$f"
+if [ -s "$f" ]; then
+  /bin/chmod +rx "$f"
+  "$f"
+fi
+
+echo "Fell through - exiting"
+/sbin/m5 exit
+
+#exec /sbin/getty -a root -L ttyAMA0 vt102
+

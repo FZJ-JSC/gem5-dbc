@@ -1,0 +1,260 @@
+simulation:
+  fs_mode: true
+  checkpoint:
+    cpu:
+      model: AtomicSimple
+
+system:
+  num_cpus: 64
+  num_slcs_per_cpu: 1
+  clock: 3.0GHz
+  voltage: 1.0V
+  model: VExpress_GEM5_V2
+
+cpu:
+  clock: 2.6GHz
+
+  have_sve: true
+
+  sve_vl: 256 
+
+  model: [AtomicSimple, R_CPU]
+  branch_predictor: BiMode
+
+  R_CPU:
+    fetchWidth: 8
+    issueWidth: 8
+    decodeWidth: 8
+    renameWidth: 8
+    fetchBufferSize: 64
+    LQEntries: 96
+    SQEntries: 96
+    LSQDepCheckShift: 0
+    numIQEntries: 120
+    numPhysVecPredRegs: 64
+    numPhysVecRegs: 364
+    numROBEntries: 224
+    renameToIEWDelay: 2
+    backComSize: 12
+    forwardComSize: 12
+
+memory:
+  - model: BwLatCtrl
+    size: 4GB 
+    channels: 8 
+    ctrl_config: 
+      sampling_window: 1000
+      curves_path: <curves-path>
+caches:
+  cache_line_size: 64
+  
+  L1I:
+    size: 64kB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+      response: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 4
+      unify_repl_TBEs: False
+      alloc_on_seq_acc_load:  True
+      alloc_on_seq_acc_store: True
+      alloc_on_seq_line_write: False
+    prefetcher:
+      selected: None
+      configuration:
+        Stride:
+          degree: 8
+
+  L1D:
+    size: 64kB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 2
+      response: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 4
+      unify_repl_TBEs: False
+      alloc_on_seq_acc_load:  True
+      alloc_on_seq_acc_store: True
+      alloc_on_seq_line_write: False
+    prefetcher:
+      selected: None
+      configuration:
+        
+        Stride:
+          degree: 2
+          latency: 1
+          queue_size: 64
+          max_prefetch_requests_with_pending_translation: 32
+          queue_squash: true
+          queue_filter: true
+          cache_snoop: false
+          tag_prefetch: true
+          throttle_control_percentage: 0
+          prefetch_on_access: true
+          prefetch_on_pf_hit: false
+  
+  WalkCache:
+    size: 1kB
+    assoc: 8
+    latency: 
+      tag: 4
+      data: 4
+      response: 4
+
+  L2:
+    active: Yes
+    size: 1MB
+    assoc: 8
+    clusivity: mostly_incl
+    latency:
+      tag: 2
+      data: 4
+      response: 4
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 16
+      unify_repl_TBEs: False
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+    xbar_width: 64
+
+    prefetcher:
+      selected: None
+      configuration:
+        Stride:
+          degree: 2
+          latency: 1
+          queue_size: 64
+          max_prefetch_requests_with_pending_translation: 32
+          queue_squash: true
+          queue_filter: true
+          cache_snoop: false
+          tag_prefetch: true
+          throttle_control_percentage: 0
+          prefetch_on_access: true
+          prefetch_on_pf_hit: false
+        Tagged:
+          degree: 8
+          queue_size: 64
+        IndirectMemory:
+          max_prefetch_distance: 32
+        SignaturePath:
+          queue_size: 64
+        SignaturePath2:
+          queue_size: 64
+        AMPM:
+          queue_size: 64
+        DCPT:
+          queue_size: 64
+        IrregularStreamBuffer:
+          chunk_size: 512
+        SlimAMPM:
+          queue_size: 64
+        BOP:
+          score_max: 31
+
+  SLC:
+    size: 1MB
+    assoc: 16
+    clusivity: mostly_excl
+    latency: 
+      tag: 2
+      data: 10
+      response: 10
+    controller:
+      number_of_TBEs: 256
+      number_of_repl_TBEs: 256
+      number_of_snoop_TBEs: 1
+      unify_repl_TBEs: False
+      enable_DMT: True
+      enable_DCT: True
+      allow_SD: True
+      # MOESI / Mostly inclusive for shared / Exclusive for unique
+      alloc_on_readshared: True
+      alloc_on_readunique: False
+      alloc_on_readonce: True
+      alloc_on_writeback: True
+      dealloc_on_unique: True
+      dealloc_on_shared: False
+      dealloc_backinv_unique: False
+      dealloc_backinv_shared: False
+
+    prefetcher:
+      selected: None
+      configuration:
+        Stride:
+          degree: 8
+
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 12
+      write_buffers: 32
+    bandwidth: 64GB
+    
+NOC:
+  active: Yes
+  clock: 2GHz
+
+  network:
+    data_width: 64
+    model: garnet
+    link_vnet_support:  [[0],[1],[2],[3],[0],[1],[2],[3]]
+    garnet:
+      vcs_per_vnet: 4
+      routing_algorithm: 0
+      # network-level deadlock threshold
+      deadlock_threshold: 50000
+      use_link_bridges: False
+    simple:
+      link_bandwidth: 64
+
+  topology:
+    router_latency: 1
+    mesh_link_latency: 1
+    node_link_latency: 1
+    model: Mesh_NOC
+    Mesh_NOC:
+      # 70 71 72 73 74  75 76 77 78 79  
+      # 60 61 62 63 64  65 66 67 68 69  
+      # 50 51 52 53 54  55 56 57 58 59  
+      # 40 41 42 43 44  45 46 47 48 49  
+      # 30 31 32 33 34  35 36 37 38 39  
+      # 20 21 22 23 24  25 26 27 28 29  
+      # 10 11 12 13 14  15 16 17 18 19  
+      #  0  1  2  3  4  5  6  7  8  9 
+      dim : [8, 10]
+      numa:
+        0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+  protocol:
+    model: CHI
+    CHI:
+      nodes:
+        RNF: 
+          single_router: Yes
+          routers: [71, 72, 73, 74, 75, 76, 77, 78, 61, 62, 63, 64, 65, 66, 67, 68, 51, 52, 53, 54, 55, 56, 57, 58, 41, 42, 43, 44, 45, 46, 47, 48, 31, 32, 33, 34, 35, 36, 37, 38, 21, 22, 23, 24, 25, 26, 27, 28, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8]
+        HNF:
+          routers: [71, 72, 73, 74, 75, 76, 77, 78, 61, 62, 63, 64, 65, 66, 67, 68, 51, 52, 53, 54, 55, 56, 57, 58, 41, 42, 43, 44, 45, 46, 47, 48, 31, 32, 33, 34, 35, 36, 37, 38, 21, 22, 23, 24, 25, 26, 27, 28, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8]
+        SNF_Mem:
+          routers:
+            - [20, 30, 40, 50, 29, 39, 49, 59]
+        # Applies to CHI_SNF_BootMem and possibly other non-main memories
+        SNF_IO:
+          routers: [4]
+        # Applies to CHI_RNI_DMA and CHI_RNI_IO
+        RNI_IO:
+          routers: [7]

@@ -1,0 +1,404 @@
+diff --git a/src/mem/BwLatCtrl.py b/src/mem/BwLatCtrl.py
+new file mode 100644
+index 0000000000..7f4b420dda
+--- /dev/null
++++ b/src/mem/BwLatCtrl.py
+@@ -0,0 +1,12 @@
++
++from m5.params import *
++from m5.proxy import *
++from m5.objects.SimpleMemory import SimpleMemory
++
++class BwLatCtrl(SimpleMemory):
++    type = 'BwLatCtrl'
++    cxx_header = "mem/bw_lat_ctrl.hh"
++    cxx_class = 'gem5::memory::BwLatCtrl'
++
++    curves_path = Param.String("", "(absolute) path to the directory containing the Bandwidth Latency Curves")
++    sampling_window = Param.Unsigned(20000, "Sampling window for access monitoring, in number of accesses")
+diff --git a/src/mem/SConscript b/src/mem/SConscript
+index 0f2efed4a3..779fe9bdc1 100644
+--- a/src/mem/SConscript
++++ b/src/mem/SConscript
+@@ -51,6 +51,7 @@ DebugFlag('SysBridge')
+ SimObject('MemCtrl.py', sim_objects=['MemCtrl'],
+         enums=['MemSched'])
+ SimObject('HeteroMemCtrl.py', sim_objects=['HeteroMemCtrl'])
++SimObject('BwLatCtrl.py', sim_objects=['BwLatCtrl'])
+ SimObject('HBMCtrl.py', sim_objects=['HBMCtrl'])
+ SimObject('MemInterface.py', sim_objects=['MemInterface'], enums=['AddrMap'])
+ SimObject('DRAMInterface.py', sim_objects=['DRAMInterface'],
+@@ -79,6 +80,7 @@ Source('external_slave.cc')
+ Source('mem_ctrl.cc')
+ Source('hetero_mem_ctrl.cc')
+ Source('hbm_ctrl.cc')
++Source('bw_lat_ctrl.cc')
+ Source('mem_interface.cc')
+ Source('dram_interface.cc')
+ Source('nvm_interface.cc')
+@@ -119,6 +121,11 @@ if env['HAVE_DRAMSIM3']:
+     Source('dramsim3_wrapper.cc')
+     Source('dramsim3.cc')
+ 
++if env['HAVE_RAMULATOR2']:
++    SimObject('Ramulator2.py', sim_objects=['Ramulator2'])
++    Source('ramulator2.cc')
++    DebugFlag("Ramulator2")
++
+ SimObject('MemChecker.py', sim_objects=['MemChecker', 'MemCheckerMonitor'])
+ Source('mem_checker.cc')
+ Source('mem_checker_monitor.cc')
+@@ -139,6 +146,8 @@ DebugFlag('DRAMPower')
+ DebugFlag('DRAMState')
+ DebugFlag('NVM')
+ DebugFlag('ExternalPort')
++DebugFlag('HeteroMemCtrl')
++DebugFlag('BwLatCtrl')
+ DebugFlag('HtmMem', 'Hardware Transactional Memory (Mem side)')
+ DebugFlag('LLSC')
+ DebugFlag('MemCtrl')
+diff --git a/src/mem/bw_lat_ctrl.cc b/src/mem/bw_lat_ctrl.cc
+new file mode 100644
+index 0000000000..04ad9a4274
+--- /dev/null
++++ b/src/mem/bw_lat_ctrl.cc
+@@ -0,0 +1,241 @@
++#include "mem/bw_lat_ctrl.hh"
++#include "base/logging.hh"
++#include "base/trace.hh"
++#include "debug/BwLatCtrl.hh"
++#include "mem/packet.hh"
++#include "sim/cur_tick.hh"
++
++namespace gem5 {
++namespace memory {
++BwLatCtrl::BwLatCtrl(const BwLatCtrlParams &p)
++    : SimpleMemory(p), stats(*this), samplingWindow(p.sampling_window) {
++
++  // Very bad hack to get the ratio between reads and writes
++  // from the filename
++  auto get_rw_ratio = [](std::string path) {
++    std::string base_filename = path.substr(path.find_last_of("/\\") + 1);
++    std::string noext =
++        base_filename.substr(0, base_filename.find_last_of("."));
++    std::string rw_ratio_str = noext.substr(noext.find_last_of("bwlat_") + 1);
++    unsigned n_rw_ratio = std::atoll(rw_ratio_str.c_str());
++    return n_rw_ratio;
++  };
++
++  // Read from the directory containing the path of the curves
++  DPRINTF(BwLatCtrl, "Getting curves from %s\n", p.curves_path);
++
++  for (const auto &curve_path :
++       std::filesystem::directory_iterator(p.curves_path)) {
++    DPRINTF(BwLatCtrl, "Reading file: %s\n", curve_path);
++    std::ifstream curve_file(curve_path.path());
++
++    Curve curve;
++    double tmp_lat;
++    double tmp_bw;
++
++    while (curve_file >> tmp_bw >> tmp_lat) {
++      curve.push_back(std::make_pair(tmp_lat, tmp_bw));
++    }
++
++    auto rw_ratio = get_rw_ratio(curve_path.path());
++    panic_if(rw_ratio % 2 != 0, "rw_ratio must be even");
++    curve.sort();
++    curveMap[rw_ratio >> 1] = curve;
++  }
++  DPRINTF(BwLatCtrl, "Read %d curves from %s\n", curveMap.size(),
++          p.curves_path);
++}
++
++Tick BwLatCtrl::getLatency() const { return currentLatency; }
++
++bool BwLatCtrl::recvTimingReq(PacketPtr pkt) {
++
++  DPRINTF(BwLatCtrl, "recvTimingReq: request %s addr %#x size %d\n",
++          pkt->cmdString(), pkt->getAddr(), pkt->getSize());
++
++  pkt->headerDelay = 0;
++  pkt->payloadDelay = 0;
++  if (!didReceiveFirstRequest) {
++    lastUpdate = curTick();
++    didReceiveFirstRequest = true;
++  }
++
++  readReqCount += pkt->isRead();
++  writeReqCount += pkt->isWrite();
++  bytesReadCtrl += (pkt->isRead() * pkt->getSize());
++  bytesWrittenCtrl += (pkt->isWrite() * pkt->getSize());
++
++  // Every samplingWindow requests, update latency
++  if (((readReqCount + writeReqCount) % samplingWindow) == 0) {
++    targetLatency =
++        Tick(double(getClosestMatchingLatency()) * (1 + latencyOverflowFactor));
++
++    // Increment in 5% amts
++    auto increment_amt = exponentialIncrement(currentLatency, targetLatency);
++    auto next_latency = Tick(double(currentLatency) + increment_amt);
++    DPRINTF(BwLatCtrl,
++            "Modifying latency: cur = %lld, next = %lld, target = %lld\n",
++            currentLatency, next_latency, targetLatency);
++    currentLatency = next_latency;
++
++    bytesReadCtrl = 0;
++    bytesWrittenCtrl = 0;
++    lastUpdate = curTick();
++  }
++
++  return SimpleMemory::recvTimingReq(pkt);
++}
++
++void BwLatCtrl::dequeue() {
++
++  stats.totalRequestedBandwidth += lastBandwidth;
++  stats.bandwidthRequestedCount += 1;
++  stats.totalDispatchedLatency += ticksToCycles(currentLatency);
++  stats.latencyDispatchedCount += 1;
++
++  SimpleMemory::dequeue();
++}
++
++Tick BwLatCtrl::getClosestMatchingLatency() {
++
++  uint8_t rw_ratio =
++      std::ceil((float)readReqCount / (readReqCount + writeReqCount) * 100);
++
++  // round (up) to nearest multiple of 2
++  rw_ratio = (rw_ratio >> 1) << 1;
++
++  double bytes_rw = bytesReadCtrl + bytesWrittenCtrl;
++  double bandwidth_mb =
++      bytes_rw / (double(curTick() - lastUpdate) / TICKS_PER_NS) * 1000;
++  DPRINTF(BwLatCtrl, "RW Ratio is %d: got %d reads and %d writes\n", rw_ratio,
++          readReqCount, writeReqCount);
++  DPRINTF(BwLatCtrl, "Estimated BW is %.4f MB/s\n", bandwidth_mb);
++
++  lastBandwidth = bandwidth_mb;
++
++  // got 51 curves -> store them as their rw_ratio / 2
++  const auto &curve = curveMap[rw_ratio >> 1];
++  // getClosestMatchingLatency returns lat in cycles
++  // I need it in ticks
++  auto scaled_latency =
++      curve.getClosestMatchingLatency(bandwidth_mb, latencyOverflowFactor);
++
++  if (systemLatency >= scaled_latency) {
++    DPRINTF(BwLatCtrl, "Got minimum latency, returning 0\n");
++    return 0;
++  }
++
++  return cyclesToTicks(scaled_latency - systemLatency);
++}
++
++double BwLatCtrl::exponentialIncrement(double current_latency,
++                                       double target_latency) {
++  const double EXPONENTIAL_INCREMENT_FACTOR = 20.0;
++
++  return (target_latency - current_latency) / EXPONENTIAL_INCREMENT_FACTOR;
++}
++
++// Curve Object
++
++void BwLatCtrl::Curve::sort() {
++  push_back(std::make_pair(0, 0));
++  std::sort(_curve.begin(), _curve.end(),
++            [](const auto &cur_pair, const auto &other_pair) {
++              return cur_pair.second > other_pair.second;
++            });
++}
++
++Cycles BwLatCtrl::Curve::getClosestMatchingLatency(
++    double bandwidth, double &latency_overflow_factor) const {
++  const auto &name = []() { return "::Curve"; };
++
++  // Check if I'm over the range or under
++  auto highest_bw = _curve.front().second;
++  auto lowest_bw = _curve.back().second;
++  auto highest_lat = _curve.front().first;
++  auto lowest_lat = _curve.back().first;
++
++  // Boundary conditions:
++  // I'm outside the curve
++  if (bandwidth >= highest_bw) {
++    latency_overflow_factor += 0.02;
++    DPRINTF(BwLatCtrl,
++            "Bandwidth over the limit: responding with (max) lat = %lld\n",
++            highest_lat);
++    return Cycles(highest_lat);
++  }
++
++  if (bandwidth <= lowest_bw) {
++    DPRINTF(BwLatCtrl,
++            "Bandwidth below the limit: responding with (min) lat = %lld\n",
++            lowest_lat);
++    return Cycles(lowest_lat);
++  }
++
++  // Main:
++  // Look for a point within the curve,
++  // interpolate using the current and next bandwidth value
++  const auto &lower_bound_it = std::lower_bound(
++      _curve.begin(), _curve.end(), bandwidth,
++      [](const std::pair<double, double> &cur_pair, const double &bandwidth) {
++        return cur_pair.second > bandwidth;
++      });
++
++  const auto lower_bound_lat = lower_bound_it->first;
++  const auto lower_bound_bw = lower_bound_it->second;
++
++  const auto &upper_bound_it = std::prev(lower_bound_it);
++  const auto upper_bound_lat = upper_bound_it->first;
++  const auto upper_bound_bw = upper_bound_it->second;
++
++  const auto slope =
++      (bandwidth - lower_bound_bw) / (upper_bound_bw - lower_bound_bw);
++  const auto latency_increase_from_base =
++      (upper_bound_lat - lower_bound_lat) * slope;
++  auto latency_value = lower_bound_lat + latency_increase_from_base;
++
++  // Clamp latency to minimum value in the curve
++  if (lower_bound_lat == 0)
++    latency_value = upper_bound_lat;
++
++  DPRINTF(BwLatCtrl, "Got Latency = %f. BW = [%f, %f], LAT = [%f, %f]\n",
++          latency_value, lower_bound_bw, upper_bound_bw, lower_bound_lat,
++          upper_bound_lat);
++
++  latency_overflow_factor = std::max(0.0, latency_overflow_factor - 0.01);
++
++  return Cycles(latency_value);
++}
++// Stats
++BwLatCtrl::BwLatCtrlStats::BwLatCtrlStats(BwLatCtrl &_ctrl)
++    : statistics::Group(&_ctrl), ctrl(_ctrl),
++
++      ADD_STAT(totalDispatchedLatency, statistics::units::Cycle::get(),
++               "Total Latency dispatched by the BwLatController"),
++      ADD_STAT(
++          latencyDispatchedCount, statistics::units::Count::get(),
++          "Number of times a response got dispatched by the BwLatController"),
++
++      ADD_STAT(totalRequestedBandwidth, statistics::units::Byte::get(),
++               "Total bandwidth requested from the controller"),
++      ADD_STAT(bandwidthRequestedCount, statistics::units::Count::get(),
++               "Number of times bandiwdth was exhamined"),
++      ADD_STAT(totalDispatchedBandwidth, statistics::units::Byte::get(),
++               "Total bandwidth dispatched from the controller"),
++      ADD_STAT(bandwidthDispatchedCount, statistics::units::Count::get(),
++               "Number of times bandiwdth-dispatched was exhamined") {}
++
++void BwLatCtrl::BwLatCtrlStats::regStats() {
++  using namespace statistics;
++
++  totalDispatchedLatency = 0;
++  latencyDispatchedCount = 0;
++
++  totalRequestedBandwidth = 0;
++  bandwidthRequestedCount = 0;
++
++  totalDispatchedBandwidth = 0;
++  bandwidthDispatchedCount = 0;
++}
++} // namespace memory
++} // namespace gem5
+diff --git a/src/mem/bw_lat_ctrl.hh b/src/mem/bw_lat_ctrl.hh
+new file mode 100644
+index 0000000000..a3e048f593
+--- /dev/null
++++ b/src/mem/bw_lat_ctrl.hh
+@@ -0,0 +1,92 @@
++#ifndef __MEM_BW_LAT_CTRL_HH__
++#define __MEM_BW_LAT_CTRL_HH__
++
++#include <algorithm>
++#include <deque>
++#include <filesystem>
++#include <fstream>
++#include <list>
++#include <string>
++#include <unordered_set>
++#include <utility>
++#include <vector>
++
++#include "mem/abstract_mem.hh"
++#include "mem/port.hh"
++#include "mem/simple_mem.hh"
++#include "params/BwLatCtrl.hh"
++
++namespace gem5 {
++
++namespace memory {
++class BwLatCtrl : public SimpleMemory {
++
++public:
++  BwLatCtrl(const BwLatCtrlParams &p);
++
++protected:
++  virtual Tick getLatency() const override;
++  virtual bool recvTimingReq(PacketPtr pkt) override;
++  virtual void dequeue() override;
++
++private:
++  class Curve {
++  public:
++    using CurvePoint = std::pair<double, double>;
++
++    void push_back(CurvePoint bw_lat_pair) { _curve.push_back(bw_lat_pair); }
++    Cycles getClosestMatchingLatency(double bandwidth,
++                                     double &latency_overflow_factor) const;
++    std::vector<CurvePoint> const curve() { return _curve; };
++    void sort();
++    const CurvePoint &min() const { return _curve.back(); }
++    const CurvePoint &max() const { return _curve.front(); }
++
++  private:
++    std::vector<std::pair<double, double>> _curve;
++  };
++  struct BwLatCtrlStats : public statistics::Group {
++    BwLatCtrlStats(BwLatCtrl &ctrl);
++
++    void regStats() override;
++
++    BwLatCtrl &ctrl;
++    statistics::Scalar totalDispatchedLatency;
++    statistics::Scalar latencyDispatchedCount;
++
++    statistics::Scalar totalRequestedBandwidth;
++    statistics::Scalar bandwidthRequestedCount;
++
++    statistics::Scalar totalDispatchedBandwidth;
++    statistics::Scalar bandwidthDispatchedCount;
++  };
++
++  BwLatCtrlStats stats;
++
++  Tick getClosestMatchingLatency();
++  double exponentialIncrement(double, double);
++
++  std::array<Curve, 51> curveMap;
++  uint64_t readReqCount{0};
++  uint64_t writeReqCount{0};
++
++  const uint32_t samplingWindow;
++  Tick currentLatency{20000};
++  Tick targetLatency{20000};
++  double lastBandwidth{0};
++  Cycles systemLatency{250};
++  bool didReceiveFirstRequest{false};
++  double latencyOverflowFactor = 0.0;
++
++  static constexpr uint16_t TICKS_PER_NS = 1000;
++  uint64_t bytesReadCtrl{0};
++  uint64_t bytesWrittenCtrl{0};
++  Tick lastUpdate{curTick()};
++  Tick lastBandwidthReported{curTick()};
++
++  uint32_t dispatchedRequests{0};
++};
++
++} // namespace memory
++} // namespace gem5
++#endif //__MEM_BW_LAT_CTRL_HH__
