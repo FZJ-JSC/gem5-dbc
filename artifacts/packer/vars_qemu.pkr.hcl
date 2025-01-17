@@ -20,9 +20,19 @@ variable "qemu_headless" {
   default = true
 }
 
-variable "qemu_efi_aarch64" {
+variable "qemu_efi_arm64" {
   type    = string
   default = "/usr/share/AAVMF/AAVMF_CODE.fd"
+}
+
+variable "qemu_cpu_arm64" {
+  type    = string
+  default = "neoverse-v1"
+}
+
+variable "qemu_cpu_x86_64" {
+  type    = string
+  default = "qemu64"
 }
 
 locals {
@@ -35,8 +45,8 @@ locals {
     "x86_64"  = "q35"
   }
   qemu_cpus = {
-    "arm64"   = "cortex-a72"
-    "x86_64"  = "qemu64"
+    "arm64"   = "${var.qemu_cpu_arm64}"
+    "x86_64"  = "${var.qemu_cpu_x86_64}"
   }
   qemu_arch      = lookup(local.qemu_archs,    var.build_arch, "aarch64")
   qemu_machine   = lookup(local.qemu_machines, var.build_arch, "virt")
@@ -47,6 +57,6 @@ locals {
     ["-device", "qemu-xhci"],
     ["-device", "usb-kbd"],
     ["-boot",   "order=dc"],
-    ["-bios",   "${var.qemu_efi_aarch64}"]
+    ["-bios",   "${var.qemu_efi_arm64}"]
   ] : null
 }

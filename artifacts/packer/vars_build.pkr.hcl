@@ -1,5 +1,9 @@
 # Build variables
 
+variable "images_dir" {
+  type    = string
+}
+
 variable "build_arch" {
   type    = string
   default = "arm64"

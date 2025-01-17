@@ -11,7 +11,7 @@ packer {
 
 source "qemu" "debian" {
   vm_name          = "debian.img"
-  output_directory = "${path.cwd}/${var.build_dir}/${var.build_arch}/disks"
+  output_directory = "${var.images_dir}/${var.build_dir}/${var.build_arch}/disks"
 
   machine_type = local.qemu_machine
   cpu_model    = local.qemu_cpu_model
@@ -26,7 +26,7 @@ source "qemu" "debian" {
         "<wait>c<wait>",
         "linux /${local.debian_boot}/vmlinuz",
         " auto=true",
-        " url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg",
+        " url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-${var.debian_version}.cfg",
         " hostname=${var.image_hostname}",
         " domain=local",
         " --- quiet",
