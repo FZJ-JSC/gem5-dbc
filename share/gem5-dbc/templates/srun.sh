@@ -1,23 +1,14 @@
 #!/bin/bash
-
 GEM5_BIN={gem5_bin}
-GEM5_SCRIPT={gem5_script}
+GEM5_SCR={gem5_script}
+WORK_DIR={gem5_output}
+FILE_OUT="output.log"
 
-WDIR={benchmark_output}
-CONF={benchmark_config}
-
-if [ -f "$WDIR/stats.txt" ]; then
-	echo "$WDIR/stats.txt already exists. Exiting."
-	exit 1
+if [ -f "$WORK_DIR/stats.txt" ]; then
+  echo "$WORK_DIR/stats.txt already exists. Exiting."
+  exit 1
 fi
 
-pushd $WDIR
-
-$GEM5_BIN \
-    {gem5_debug_opts} \
-	--outdir=$WDIR $GEM5_SCRIPT \
-	--benchmark-cfg  $CONF \
-	{gem5_script_opts} \
-	2>&1 | tee -a $WDIR/output.log
-
+pushd $WORK_DIR
+$GEM5_BIN --outdir=$WORK_DIR $GEM5_SCR > $FILE_OUT 2>&1
 popd

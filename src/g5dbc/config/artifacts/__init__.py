@@ -1,1 +1,1 @@
-from .artifacts import ArtifactList
+from .artifacts import BinaryArtifact

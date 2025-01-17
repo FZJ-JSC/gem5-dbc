@@ -1,109 +1,146 @@
+import argparse
 from dataclasses import dataclass
 from pathlib import Path
-import argparse
-import os
+
+from ..util.filesystem import find_file
+
 
 @dataclass
 class Options:
-    benchmark_mod: Path|None
-    path_prefix:   Path
-    templates_dir: Path
-    parser_re_dir: Path
-    artifacts:     Path
-    results_dir:   Path
-    parser_out:    Path
-    gem5_bin:      Path
-    gem5_script:   Path
-    benchmark_cfg: Path|None
-    gem5_debug_opts:  str
-    gem5_script_opts: str
-    parser_format:    str
-    generate: bool
-    parse:    bool
-    plots:    bool
+    configure: list[str]
+    generate: list[Path]
+    parse: list[Path]
+    user_conf_dir: Path
+    user_data_dir: Path
+    artifacts_dir: Path
+    workspace_dir: Path
+    config_output: str
+    parser_output: str
+    parser_format: str
     nprocs: int
-
-    def __post_init__(self):
-        self.path_prefix   = Path(self.path_prefix).resolve()
-        self.artifacts     = Path(self.artifacts).resolve()
-        self.results_dir   = Path(self.results_dir).resolve()
-        self.templates_dir = Path(self.templates_dir).resolve()
-        self.parser_re_dir = Path(self.parser_re_dir).resolve()
-        self.parser_out    = Path(self.parser_out).resolve()
-        self.gem5_bin      = Path(self.gem5_bin).resolve()
-        self.gem5_script   = Path(self.gem5_script).resolve()
-
-        if self.benchmark_mod is not None:
-            benchmark_mod = Path(self.benchmark_mod) #.resolve()
-            if len(benchmark_mod.parts) == 1:
-                self.benchmark_mod = self.path_prefix.joinpath("share/g5dbc/benchmarks", benchmark_mod)
-            else:
-                self.benchmark_mod = benchmark_mod
-
-        if self.benchmark_cfg is not None:
-            benchmark_cfg = Path(self.benchmark_cfg) #.resolve()
-            if len(benchmark_cfg.parts) == 1:
-                self.benchmark_cfg = self.path_prefix.joinpath("share/g5dbc/configs", benchmark_cfg)
-            else:
-                self.benchmark_cfg = benchmark_cfg
+    command: str
 
     @classmethod
-    def parse_from_args(cls):
+    def parse_from_args(cls, user_conf_dir: str, user_data_dir: str):
+        conf_dir = Path(user_conf_dir)
+        data_dir = Path(user_data_dir)
+        work_dir = Path.cwd()
+
         parser = argparse.ArgumentParser(description="Configuration")
-        
+
         parser.add_argument(
-            "--benchmark-mod", metavar="benchmark.py", type=str, help="Benchmark Python module")
+            "--configure",
+            type=str,
+            default=None,
+            nargs=2,
+            help="Configure default values",
+            metavar=("type", "value"),
+        )
         parser.add_argument(
-            "--path-prefix",   type=str, default="/usr", help="Path Prefix")
+            "--generate",
+            type=str,
+            default=None,
+            nargs=2,
+            help="Generate simulation scripts",
+            metavar=("benchmark", "configuration"),
+        )
         parser.add_argument(
-            "--artifacts",     type=str, default=None, help="Artifacts Manifest")
+            "--parse",
+            type=str,
+            default=None,
+            nargs=1,
+            help="Parse simulation results",
+            metavar="benchmark_dir",
+        )
         parser.add_argument(
-            "--benchmark-cfg", type=str, default=None, help="Configuration File")
+            "--user-conf-dir",
+            type=str,
+            default=None,
+            help="User Configuration Directory",
+        )
         parser.add_argument(
-            "--results-dir",   type=str, default=None, help="Results Directory")
+            "--user-data-dir",
+            type=str,
+            default=None,
+            help="User Data Directory containing templates and parser subdirectories",
+        )
         parser.add_argument(
-            "--parser-out",    type=str, default=None, help="Parsed Results Directory")
+            "--artifacts-dir",
+            type=str,
+            default=None,
+            help="Artifacts Directory",
+        )
         parser.add_argument(
-            "--templates-dir", type=str, default=None, help="Templates Directory")
+            "--workspace-dir",
+            type=str,
+            default=None,
+            help="Workspace Directory",
+        )
         parser.add_argument(
-            "--parser-re-dir", type=str, default=None, help="Parser regexps Directory")
+            "--config-output",
+            type=str,
+            default="config",
+            help="Generated configuration output directory",
+        )
         parser.add_argument(
-            "--parser-format", type=str, default="flatjs", help="Parser format")
+            "--parser-output",
+            type=str,
+            default="parsed",
+            help="Parsed results output directory",
+        )
         parser.add_argument(
-             "--gem5-bin",     type=str, default=None, help="gem5 binary")
+            "--parser-format",
+            type=str,
+            default="flatjs",
+            help="Parser output format",
+        )
         parser.add_argument(
-             "--gem5-debug-opts",  type=str, default="", help="gem5 debug options")
-        parser.add_argument(
-             "--gem5-script-opts", type=str, default="", help="gem5 script options")
-        parser.add_argument(
-            "--generate", action='store_true', default=False, help="Generate workload")
-        parser.add_argument(
-            "--parse",    action='store_true', default=False, help="Parse results")
-        parser.add_argument(
-            "--plots",    action='store_true', default=False, help="Generate plots from results")
-        parser.add_argument(
-            "--nprocs",   type=int, default=1, help="Number of processes in pool")
+            "--nprocs",
+            type=int,
+            default=1,
+            help="Number of processes in process pool",
+        )
 
         args = parser.parse_args()
 
-        if args.artifacts is None:
-             args.artifacts = f"{args.path_prefix}/share/g5dbc/artifacts.yaml"
+        args.user_conf_dir = (
+            conf_dir if args.user_conf_dir is None else Path(args.user_conf_dir)
+        )
+        args.user_data_dir = (
+            data_dir if args.user_data_dir is None else Path(args.user_data_dir)
+        )
+        args.artifacts_dir = (
+            data_dir if args.artifacts_dir is None else Path(args.artifacts_dir)
+        )
+        args.workspace_dir = (
+            work_dir if args.workspace_dir is None else Path(args.workspace_dir)
+        )
 
-        if args.templates_dir is None:
-             args.templates_dir = f"{args.path_prefix}/share/g5dbc/templates"
+        command = ""
+        if args.configure:
+            command = "configure"
+        elif args.generate:
+            command = "generate"
+            args.generate[0] = find_file(
+                args.generate[0],
+                ".py",
+                work_dir,
+                args.workspace_dir,
+                data_dir.joinpath("benchmarks"),
+                args.user_data_dir.joinpath("benchmarks"),
+            )
+            args.generate[1] = find_file(
+                args.generate[1],
+                ".yaml",
+                work_dir,
+                args.workspace_dir,
+                data_dir.joinpath("configs"),
+                args.user_data_dir.joinpath("configs"),
+            )
+        elif args.parse:
+            command = "parse"
+            args.parse[0] = find_file(
+                args.parse[0], ".py", work_dir.joinpath(args.parse[0])
+            )
 
-        if args.parser_re_dir is None:
-             args.parser_re_dir = f"{args.path_prefix}/share/g5dbc/parser"
-
-        if args.gem5_bin is None:
-             args.gem5_bin = f"{args.path_prefix}/bin/gem5.bin"
-            
-        if args.results_dir is None:
-             args.results_dir = f"{os.getcwd()}/results"
-
-        if args.parser_out is None:
-             args.parser_out = f"{os.getcwd()}/parsed"
-
-        gem5_script = str(Path(__file__).parent.joinpath("../../main.py").resolve())
-
-        return cls(gem5_script=gem5_script,**vars(args))
+        return cls(command=command, **vars(args))

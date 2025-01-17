@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-def parseNumberText(txt: str|None, default='') -> int|float|str:
+def parse_number_text(txt: str|None, default='') -> int|float|str:
     if txt is None:
         return default
     if txt is not None:
@@ -17,12 +17,12 @@ def parseNumberText(txt: str|None, default='') -> int|float|str:
 
 def parse_gem5_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+)")
-    h  = [(n,v) for n,v in enumerate([parseNumberText(n) for n in re.findall(r,line)])]
+    h  = [(n,v) for n,v in enumerate([parse_number_text(n) for n in re.findall(r,line)])]
     return h
 
 def parse_gem5_sparse_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+),([+-.\d]+)")
-    h  = [(parseNumberText(n[0]),parseNumberText(n[1])) for n in re.findall(r,line)]
+    h  = [(parse_number_text(n[0]),parse_number_text(n[1])) for n in re.findall(r,line)]
     return h
 
 def parse_gem5_key(key: str):
@@ -54,12 +54,12 @@ def normalize_gem5_stats_line(line: str):
             v = list(parse_gem5_histogram(line))
             k = "list"
         else:
-            v = parseNumberText(s[1])
+            v = parse_number_text(s[1])
     else:
         if c == "|" and k == "values":
             v = list(parse_gem5_sparse_histogram(line))
         else:
-            v = parseNumberText(s[1])
+            v = parse_number_text(s[1])
     # Catch buggy stats.txt    
     v = 0 if v == "#" or v == "(Unspecified)" else v
     return p,k,v

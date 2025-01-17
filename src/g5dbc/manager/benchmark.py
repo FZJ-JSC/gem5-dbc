@@ -1,8 +1,9 @@
-from pathlib import Path
 import importlib.util
 import sys
+from pathlib import Path
 
 from ..benchmark import AbstractBenchmark
+
 
 def instantiate_benchmark(path: Path) -> AbstractBenchmark:
     benchmark_name = path.stem
@@ -12,8 +13,7 @@ def instantiate_benchmark(path: Path) -> AbstractBenchmark:
     sys.modules[module.__name__] = module
     spec.loader.exec_module(module)
 
-    app  = importlib.import_module(benchmark_name)
-    benchmark : AbstractBenchmark = getattr(app, benchmark_name)()
+    app = importlib.import_module(benchmark_name)
+    benchmark: AbstractBenchmark = getattr(app, benchmark_name)()
 
     return benchmark
-

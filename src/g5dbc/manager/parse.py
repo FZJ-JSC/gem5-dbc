@@ -1,46 +1,46 @@
+import json
 from multiprocessing import Pool
 from pathlib import Path
-import json
-
-from .options import Options
-from .benchmark import instantiate_benchmark
 
 from ..benchmark import AbstractBenchmark
-from ..config import Config
-from ..util import yaml_dict
-
 from ..parser import StatsParser
 from ..parser.flatjs import FlatJS
+from .benchmark import instantiate_benchmark
+from .config_file import read_config_file
+from .options import Options
 
 
-def parse_subdir(args: tuple[Path,Path,AbstractBenchmark,StatsParser]) -> dict:
+def parse_subdir(args: tuple[Path, Path, AbstractBenchmark, StatsParser]) -> dict:
     stats_dir, output_dir, benchmark, parser = args
 
     name = stats_dir.name
 
     output_file = output_dir.joinpath(f"{name}")
-    
+
     config_file = stats_dir.joinpath(f"config.yaml")
     outlog_file = stats_dir.joinpath(f"output.log")
     stdout_file = stats_dir.joinpath(f"system.terminal")
-    stats_file  = stats_dir.joinpath(f"stats.txt")
-
-    print(f"parse_subdir: Parsing {stats_dir.name} to {output_file}")
+    stats_file = stats_dir.joinpath(f"stats.txt")
 
     # Read benchmark configuration
-    config = Config.from_dict(yaml_dict.load(config_file))
+    config = read_config_file(config_file)
     parsed_output = dict(
-        output_log = benchmark.parse_output_log(outlog_file),
-        stdout_log = benchmark.parse_stdout_log(stdout_file)
+        output_log=benchmark.parse_output_log(outlog_file),
+        stdout_log=benchmark.parse_stdout_log(stdout_file),
     )
 
-    stats_params = dict(bench_id=name,**benchmark.parse_config(config))
+    stats_params = dict(bench_id=name, **benchmark.parse_config(config))
+    if output_file.with_suffix(".0.json").exists():
+        print(f"parse_subdir: Skipped parsing {name} to {output_file}")
+        return stats_params
+
+    print(f"parse_subdir: Parsing {name} to {output_file}")
 
     parsed_rois = parser.parse_stats(stats_params, parsed_output, stats_file)
 
-    for roi_id,rows in enumerate(parsed_rois):
+    for roi_id, rows in enumerate(parsed_rois):
         fname = f"{output_file}.{roi_id}.json"
-        with open(fname, 'w') as f:
+        with open(fname, "w") as f:
             json.dump(rows, f)
             f.write("\n")
 
@@ -57,41 +57,49 @@ def parse_workload(opts: Options) -> int:
         int: _description_
     """
     # Instantiate benchmark
-    benchmark = instantiate_benchmark(opts.benchmark_mod)
+
+    benchmark_mod = opts.parse[0]
+    benchmark = instantiate_benchmark(benchmark_mod)
 
     # Get benchmark name
     name = benchmark.get_name()
 
-    # Set benchmark results and parsing directory
-    opts.results_dir = opts.results_dir.joinpath(name)
-    opts.parser_out  = opts.parser_out.joinpath(name)
+    # Set benchmark configurations directory
+    # {workspace_dir}/{name}/{config_output}
+    config_output = opts.workspace_dir.joinpath(name, opts.config_output)
+    parser_output = opts.workspace_dir.joinpath(name, opts.parser_output)
 
     # Create benchmark results directory
-    opts.parser_out.mkdir(parents=True, exist_ok=True)
+    parser_output.mkdir(parents=True, exist_ok=True)
 
     print(f"Parsing results for benchmark {name}")
 
-    stats_dirs = [f for f in opts.results_dir.iterdir()
-                    if f.is_dir()
-                    and f.joinpath("stats.txt").is_file()
-                    and  f.joinpath("stats.txt").stat().st_size > 0]
+    stats_dirs = [
+        f
+        for f in config_output.iterdir()
+        if f.is_dir()
+        and f.joinpath("stats.txt").is_file()
+        and f.joinpath("stats.txt").stat().st_size > 0
+    ]
 
-    parser = FlatJS(parser_re_dir=opts.parser_re_dir)
-    
-    args_list = [(stats_dir, opts.parser_out, benchmark, parser) for stats_dir in stats_dirs ]
+    parser = FlatJS(parser_re_dir=opts.user_data_dir.joinpath("parser"))
+
+    args_list = [
+        (stats_dir, parser_output, benchmark, parser) for stats_dir in stats_dirs
+    ]
     p_results = []
 
     with Pool(processes=opts.nprocs) as pool:
-       for result in list(pool.imap_unordered(parse_subdir, args_list)):
-           p_results.append(result)
+        for result in list(pool.imap_unordered(parse_subdir, args_list)):
+            p_results.append(result)
 
-    #for p in args_list[:1]:
+    # for p in args_list[:1]:
     #    parse_subdir(p)
 
     # Write index
     print(f"Writing index")
-    index_file = opts.parser_out.joinpath("index.json")
-    with index_file.open('w') as f:
+    index_file = parser_output.joinpath("index.json")
+    with index_file.open("w") as f:
         json.dump(p_results, f)
         f.write("\n")
 

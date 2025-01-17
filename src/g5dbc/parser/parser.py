@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 import yaml
 
-from ..util.parser import stats_line_generator, parseNumberText
+from ..util.parser import stats_line_generator, parse_number_text
 from ..config import Config
 
 class StatsParser(ABC):
@@ -31,8 +31,7 @@ class StatsParser(ABC):
                 m = re.fullmatch(r, s)
                 if m:
                     for l in labels:
-                        #print(r,s,l)
-                        g = [parseNumberText(k) for k in m.groups()]
+                        g = [parse_number_text(k) for k in m.groups()]
                         c = l.format(*g)
                         self.update_column(parsed_rois[roi_id], c, key, val)
 

@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 
-from .artifacts import ArtifactList
+from .artifacts import BinaryArtifact
 from .caches import CacheConf
 from .cpus import CPUConf
 from .interconnect import InterconnectConf
@@ -10,20 +10,19 @@ from .prefetcher import PrefetcherConf
 from .simulation import SimulationConf
 from .system import SystemConf
 
+
 @dataclass
 class Config:
-    system:       SystemConf
+    system: SystemConf
     interconnect: InterconnectConf
-    network:      NetworkConf
-    memory:       MemoryConf
-    simulation:   SimulationConf
-    artifacts:    ArtifactList
-
-    cpus:         dict[str, CPUConf]        = field(default_factory=dict)
-    caches:       dict[str, CacheConf]      = field(default_factory=dict)
-    prefetcher:   dict[str, PrefetcherConf] = field(default_factory=dict)
-
-    parameters:   dict = field(default_factory=dict)
+    network: NetworkConf
+    memory: MemoryConf
+    simulation: SimulationConf
+    cpus: dict[str, CPUConf] = field(default_factory=dict)
+    caches: dict[str, CacheConf] = field(default_factory=dict)
+    prefetcher: dict[str, PrefetcherConf] = field(default_factory=dict)
+    artifacts: dict[str, list[BinaryArtifact]] = field(default_factory=dict)
+    parameters: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if self.network.clock == "":
@@ -40,17 +39,26 @@ class Config:
             network=NetworkConf(**conf_dict["network"]),
             interconnect=InterconnectConf(**conf_dict["interconnect"]),
             simulation=SimulationConf(**conf_dict["simulation"]),
-            artifacts=ArtifactList(**conf_dict["artifacts"]),
-            parameters=conf_dict.setdefault("parameters", dict())
         )
 
-        for name, opts in conf_dict["cpus"].items():
-            config.cpus[name] = CPUConf(**{**opts, 'name':name})
+        for k, v in conf_dict["cpus"].items():
+            config.cpus[k] = CPUConf(**{**v, "name": k})
 
-        for name, opts in conf_dict["caches"].items():
-            config.caches[name] = CacheConf(**{**opts, 'name':name})
+        for k, v in conf_dict["caches"].items():
+            config.caches[k] = CacheConf(**{**v, "name": k})
 
-        for name, opts in conf_dict["prefetcher"].items():
-            config.prefetcher[name] = PrefetcherConf(**{**opts, 'name':name})
+        for k, v in conf_dict["prefetcher"].items():
+            config.prefetcher[k] = PrefetcherConf(**{**v, "name": k})
+
+        for k, v in conf_dict.get("artifacts", dict()).items():
+            config.artifacts[k] = [BinaryArtifact(**a) for a in v]
+
+        for k, v in conf_dict.get("parameters", dict()).items():
+            config.parameters[k] = v
 
         return config
+
+    def search_artifact(self, typename: str) -> dict[str, BinaryArtifact]:
+        arch_name = self.system.architecture
+        artifacts = self.artifacts[arch_name]
+        return dict([(a.name, a) for a in artifacts if a.bintype == typename])
