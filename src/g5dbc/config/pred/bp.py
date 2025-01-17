@@ -1,0 +1,23 @@
+from dataclasses import asdict, dataclass, field
+
+
+@dataclass
+class BTBConf:
+    numEntries: int = 4096
+    tagBits: int = 16
+    associativity: int = 1
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class BPConf:
+    name: str
+    model: str
+    BTB: BTBConf
+    params: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        if isinstance(self.BTB, dict):
+            self.BTB = BTBConf(**self.BTB)

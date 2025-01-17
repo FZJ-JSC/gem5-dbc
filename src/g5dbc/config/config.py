@@ -6,6 +6,7 @@ from .cpus import CPUConf
 from .interconnect import InterconnectConf
 from .memory import MemoryConf
 from .network import NetworkConf
+from .pred import BPConf
 from .prefetcher import PrefetcherConf
 from .simulation import SimulationConf
 from .system import SystemConf
@@ -19,6 +20,7 @@ class Config:
     memory: MemoryConf
     simulation: SimulationConf
     cpus: dict[str, CPUConf] = field(default_factory=dict)
+    branch_pred: dict[str, BPConf] = field(default_factory=dict)
     caches: dict[str, CacheConf] = field(default_factory=dict)
     prefetcher: dict[str, PrefetcherConf] = field(default_factory=dict)
     artifacts: dict[str, list[BinaryArtifact]] = field(default_factory=dict)
@@ -43,6 +45,9 @@ class Config:
 
         for k, v in conf_dict["cpus"].items():
             config.cpus[k] = CPUConf(**{**v, "name": k})
+
+        for k, v in conf_dict["branch_pred"].items():
+            config.branch_pred[k] = BPConf(**{**v, "name": k})
 
         for k, v in conf_dict["caches"].items():
             config.caches[k] = CacheConf(**{**v, "name": k})
