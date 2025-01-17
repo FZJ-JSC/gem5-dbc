@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
 
 from g5dbc.sim.m5_objects import m5_AddrRange, m5_SrcClockDomain, m5_VoltageDomain
-from g5dbc.sim.m5_objects.sim import m5_SubSystem
-from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
 from g5dbc.sim.m5_objects.io import m5_IOXBar
+from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
+from g5dbc.sim.m5_objects.sim import m5_SubSystem
 from g5dbc.sim.model.cpu import AbstractProcessor
 from g5dbc.sim.model.memory import AbstractMemSystem
 from g5dbc.sim.model.topology import AbstractTopology
+
 
 class CoherentInterconnect(m5_SubSystem):
     __metaclass__ = ABCMeta
@@ -19,23 +20,19 @@ class CoherentInterconnect(m5_SubSystem):
         self.voltage_domain = m5_VoltageDomain()
         # Create a source clock
         self.clk_domain = m5_SrcClockDomain(
-            clock=clock,
-            voltage_domain=self.voltage_domain
+            clock=clock, voltage_domain=self.voltage_domain
         )
 
     @abstractmethod
-    def get_topology(self) -> AbstractTopology:
-        """
-        """
-    
-    @abstractmethod
     def connect_IO_bus(self, iobus: m5_IOXBar) -> None:
         """
+        Connect IO bus
         """
 
     @abstractmethod
     def connect_board_port(self, system_port):
         """
+        Connect system port
         """
 
     @abstractmethod
@@ -67,7 +64,7 @@ class CoherentInterconnect(m5_SubSystem):
         """
         Connect DMA memory to corresponding interconnect controller
         """
-    
+
     @abstractmethod
     def connect_network(self):
         """
@@ -77,4 +74,5 @@ class CoherentInterconnect(m5_SubSystem):
     @abstractmethod
     def set_downstream(self):
         """
+        Connect controllers downstream
         """

@@ -1,24 +1,26 @@
 from abc import ABCMeta, abstractmethod
 
 from g5dbc.config import Config
-from g5dbc.sim.m5_objects.ruby import m5_RubySystem, Sequencer
+from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
 from g5dbc.sim.m5_objects.sim import m5_SubSystem
 from g5dbc.sim.model.topology import NodeSpec
 
 from ..controller.AbstractController import AbstractController
 
+
 class AbstractNode(m5_SubSystem):
     """
     Abstract Ruby Controller Node
     """
+
     __metaclass__ = ABCMeta
 
-    def __init__(self, node_id: NodeSpec ):
+    def __init__(self, node_id: NodeSpec):
         super().__init__()
-        self._ctrl_id   = node_id.ctrl_id
+        self._ctrl_id = node_id.ctrl_id
         self._router_id = node_id.router_id
-        self._numa_id   = node_id.numa_id
-        self._exclusive_router   = node_id.needs_exclusive_router
+        self._numa_id = node_id.numa_id
+        self._exclusive_router = node_id.needs_exclusive_router
 
     def get_ctrl_id(self) -> int:
         """
@@ -54,7 +56,7 @@ class AbstractNode(m5_SubSystem):
     def set_clock_domain(self, clk_domain) -> None:
         for seq in self.get_sequencers():
             seq.set_clock_domain(clk_domain)
-        
+
         for ctr in self.get_controllers():
             ctr.set_clock_domain(clk_domain)
 

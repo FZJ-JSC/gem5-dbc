@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 
-from g5dbc.sim.m5_objects.ruby import Sequencer
 from g5dbc.sim.m5_objects import m5_AddrRange
+from g5dbc.sim.m5_objects.ruby import Sequencer
 
 
 class AbstractController:
@@ -36,6 +36,6 @@ class AbstractController:
         """
         Set Downstream Controllers
         """
-    
+
     def set_clock_domain(self, clk_domain) -> None:
         self.clk_domain = clk_domain

@@ -1,15 +1,19 @@
 import math
+
 from g5dbc.config.memory.controller import MemCtrlConfig
 from g5dbc.sim.m5_objects import m5_AddrRange
-from g5dbc.sim.m5_objects.ruby import m5_RubySystem, Sequencer
+from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
 from g5dbc.sim.m5_objects.ruby.chi import m5_Memory_Controller
-from g5dbc.sim.m5_objects.ruby.message import m5_MessageBuffer, TriggerMessageBuffer
+from g5dbc.sim.m5_objects.ruby.message import TriggerMessageBuffer, m5_MessageBuffer
+
 from ..AbstractController import AbstractController
+
 
 class MemController(m5_Memory_Controller, AbstractController):
     """
     CHI Memory Controller
     """
+
     def __init__(self, config: MemCtrlConfig, ruby_system: m5_RubySystem):
 
         super().__init__(**config.to_dict())
@@ -17,9 +21,7 @@ class MemController(m5_Memory_Controller, AbstractController):
 
         self.triggerQueue = TriggerMessageBuffer()
         self.responseFromMemory = m5_MessageBuffer()
-        self.requestToMemory = m5_MessageBuffer(
-            ordered = True
-        )
+        self.requestToMemory = m5_MessageBuffer(ordered=True)
         self.reqRdy = TriggerMessageBuffer()
 
     def connect_network(self, network) -> None:
@@ -50,7 +52,6 @@ class MemController(m5_Memory_Controller, AbstractController):
 
     def set_addr_ranges(self, addr_ranges: list[m5_AddrRange]) -> None:
         self.addr_ranges = addr_ranges
-
 
     def set_downstream(self, cntrls: list[AbstractController]) -> None:
         raise NotImplementedError()

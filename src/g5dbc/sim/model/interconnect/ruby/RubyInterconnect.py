@@ -1,17 +1,18 @@
 from g5dbc.config import Config
+from g5dbc.sim.factory.network import NetworkFactory
+from g5dbc.sim.factory.topology.ruby import RubyTopologyFactory
 from g5dbc.sim.m5_objects import m5_AddrRange
 from g5dbc.sim.m5_objects.io import m5_IOXBar
 from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
-from g5dbc.sim.m5_objects.ruby import m5_RubySystem, m5_RubyPortProxy
-from g5dbc.sim.factory.network import NetworkFactory
-from g5dbc.sim.factory.topology.ruby import RubyTopologyFactory
-from g5dbc.sim.model.interconnect.CoherentInterconnect import CoherentInterconnect
+from g5dbc.sim.m5_objects.ruby import m5_RubyPortProxy, m5_RubySystem
 from g5dbc.sim.model.cpu import AbstractProcessor
+from g5dbc.sim.model.interconnect.CoherentInterconnect import CoherentInterconnect
 from g5dbc.sim.model.memory import AbstractMemSystem
 from g5dbc.sim.model.topology import NodeSpec
 
 from .controller import AbstractController
-from .node.chi import RNF, HNF, SNF, SNF_ROM, RNI
+from .node.chi import HNF, RNF, RNI, SNF, SNF_ROM
+
 
 class RubyInterconnect(CoherentInterconnect):
 
@@ -28,15 +29,15 @@ class RubyInterconnect(CoherentInterconnect):
             block_size_bytes=config.system.cache_line_size,
             memory_size_bits=48,
             number_of_virtual_networks=config.network.n_vnets,
-            clk_domain=self.clk_domain
-            )
+            clk_domain=self.clk_domain,
+        )
 
         self._topology = RubyTopologyFactory.create(config)
 
         self.init_interconnect()
 
     def init_interconnect(self):
-        config   = self._config
+        config = self._config
         topology = self._topology
 
         # Create RNF nodes
@@ -47,16 +48,15 @@ class RubyInterconnect(CoherentInterconnect):
 
         # Create SNF Nodes
         self.snf = [SNF(node_id) for node_id in topology.get_mem_nodes()]
-        
+
         # Create PIO controller
         self.pio = [RNI(node_id) for node_id in topology.get_dma_nodes()[:1]]
 
         for node in [*self.rnf, *self.hnf, *self.snf, *self.pio]:
             node.create_controller(config, self.ruby_system)
 
-
     def connect_board_port(self, system_port):
-        self.ruby_system.sys_port_proxy = m5_RubyPortProxy()
+        self.ruby_system.sys_port_proxy = m5_RubyPortProxy(ruby_system=self.ruby_system)
         self.ruby_system.sys_port_proxy.in_ports = system_port
 
     def connect_IO_bus(self, iobus: m5_IOXBar) -> None:
@@ -80,7 +80,9 @@ class RubyInterconnect(CoherentInterconnect):
 
             core = processor.get_active_core(core_id)
 
-            assert core.get_core_id() == core_id, f"ctrl_id={core.get_core_id()} core_id={core_id}"
+            assert (
+                core.get_core_id() == core_id
+            ), f"ctrl_id={core.get_core_id()} core_id={core_id}"
 
             # Get dcache and icache sequencers
             dcache_seq, icache_seq = node.get_sequencers()
@@ -91,7 +93,7 @@ class RubyInterconnect(CoherentInterconnect):
             core.set_numa_id(numa_id)
             core.connect_dcache(dcache_seq)
             core.connect_icache(icache_seq)
-            
+
             core.connect_walker_ports(dcache_seq, icache_seq)
             core.connect_interrupt()
 
@@ -117,10 +119,17 @@ class RubyInterconnect(CoherentInterconnect):
             # Set ranges for current numa domain
             for ctrl_id, hnf in enumerate(hnfs):
                 assert ctrl_id == hnf.get_ctrl_id()
-                addr_ranges = [m5_AddrRange(mem_range.start, size = mem_range.size(), masks = mask, intlvMatch = ctrl_id) for mem_range in hnf_ranges]
+                addr_ranges = [
+                    m5_AddrRange(
+                        mem_range.start,
+                        size=mem_range.size(),
+                        masks=mask,
+                        intlvMatch=ctrl_id,
+                    )
+                    for mem_range in hnf_ranges
+                ]
                 for ctrl in hnf.get_controllers():
                     ctrl.set_addr_ranges(addr_ranges)
-
 
     def connect_mem_nodes(self, mem_sys: AbstractMemSystem) -> None:
         for node in self.snf:
@@ -139,7 +148,10 @@ class RubyInterconnect(CoherentInterconnect):
         node_idx = lambda idx: node_ids[idx % len(node_ids)]
 
         # Create ROM Nodes
-        self.rom = [SNF_ROM(NodeSpec(router_id=node_idx(i).router_id, ctrl_id=i)) for i in range(len(mems))]
+        self.rom = [
+            SNF_ROM(NodeSpec(router_id=node_idx(i).router_id, ctrl_id=i))
+            for i in range(len(mems))
+        ]
 
         for node in self.rom:
             node.create_controller(config, self.ruby_system)
@@ -155,7 +167,10 @@ class RubyInterconnect(CoherentInterconnect):
         node_idx = lambda idx: node_ids[idx % len(node_ids)]
 
         # Create DMA Nodes
-        self.dma = [RNI(NodeSpec(router_id=node_idx(i).router_id, ctrl_id=i)) for i in range(len(ports))]
+        self.dma = [
+            RNI(NodeSpec(router_id=node_idx(i).router_id, ctrl_id=i))
+            for i in range(len(ports))
+        ]
 
         for node in self.dma:
             node.create_controller(config, self.ruby_system)
@@ -176,10 +191,10 @@ class RubyInterconnect(CoherentInterconnect):
             *self.rom,
         ]
 
-        network  = NetworkFactory.create(config, self.ruby_system)
-        
+        network = NetworkFactory.create(config, self.ruby_system)
+
         network.initialize(topology)
-        
+
         network.connect_nodes(nodes)
         network.connect_interfaces()
 
@@ -189,21 +204,19 @@ class RubyInterconnect(CoherentInterconnect):
         seqs = []
         for node in nodes:
             seqs.extend(node.get_sequencers())
-        
+
         self.ruby_system.set_num_of_sequencers(len(seqs))
-    
+
     def set_downstream(self):
-        """
-        """
-        mem_dests : list[AbstractController]= []
-        hnf_dests : list[AbstractController]= []
+        mem_dests: list[AbstractController] = []
+        hnf_dests: list[AbstractController] = []
 
         for hnf in self.hnf:
             hnf_dests.extend(hnf.get_controllers())
 
         for mem in [*self.snf, *self.rom]:
             mem_dests.extend(mem.get_controllers())
-        
+
         for node in [*self.rnf, *self.pio, *self.dma]:
             node.set_downstream(hnf_dests)
         for hnf in self.hnf:

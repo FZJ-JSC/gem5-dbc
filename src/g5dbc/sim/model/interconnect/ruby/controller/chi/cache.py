@@ -1,10 +1,18 @@
 import math
+
 from g5dbc.config.caches import CacheConf
-from g5dbc.sim.m5_objects.ruby.chi import m5_Cache_Controller
-from g5dbc.sim.m5_objects.ruby.message import m5_MessageBuffer, MandatoryMessageBuffer, TriggerMessageBuffer, OrderedTriggerMessageBuffer
-from g5dbc.sim.m5_objects.ruby import m5_RubySystem, m5_RubyCache, Sequencer
 from g5dbc.sim.m5_objects import m5_AddrRange, m5_NULL
+from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubyCache, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby.chi import m5_Cache_Controller
+from g5dbc.sim.m5_objects.ruby.message import (
+    MandatoryMessageBuffer,
+    OrderedTriggerMessageBuffer,
+    TriggerMessageBuffer,
+    m5_MessageBuffer,
+)
+
 from ..AbstractController import AbstractController
+
 
 class CacheController(m5_Cache_Controller, AbstractController):
     """
@@ -15,30 +23,30 @@ class CacheController(m5_Cache_Controller, AbstractController):
         super().__init__(**config.controller.to_dict())
         self.ruby_system = ruby_system
         self.mandatoryQueue = MandatoryMessageBuffer(
-            allow_zero_latency = config.controller.mandatory_queue_latency == 0
+            allow_zero_latency=(config.controller.mandatory_queue_latency == 0)
         )
-        self.prefetchQueue  = MandatoryMessageBuffer()
-        self.triggerQueue   = TriggerMessageBuffer()
+        self.prefetchQueue = MandatoryMessageBuffer()
+        self.triggerQueue = TriggerMessageBuffer()
         self.retryTriggerQueue = OrderedTriggerMessageBuffer()
-        self.replTriggerQueue  = OrderedTriggerMessageBuffer()
+        self.replTriggerQueue = OrderedTriggerMessageBuffer()
         self.reqRdy = TriggerMessageBuffer()
         self.snpRdy = TriggerMessageBuffer()
 
         self.cache = m5_RubyCache(
-            dataAccessLatency = config.latency.data,
-            tagAccessLatency  = config.latency.tag,
-            size  = config.size,
-            assoc = config.assoc,
-            start_index_bit = config.block_size_bits,
-            resourceStalls  = config.resource_stalls,
-            is_icache       = config.is_icache()
+            dataAccessLatency=config.latency.data,
+            tagAccessLatency=config.latency.tag,
+            size=config.size,
+            assoc=config.assoc,
+            start_index_bit=config.block_size_bits,
+            resourceStalls=config.resource_stalls,
+            is_icache=config.is_icache(),
         )
 
         # Default No prefetcher
         self.use_prefetcher = False
-        self.prefetcher     = m5_NULL
+        self.prefetcher = m5_NULL
         # Default No sequencer
-        self.sequencer      = m5_NULL
+        self.sequencer = m5_NULL
 
     def connect_network(self, network) -> None:
         """

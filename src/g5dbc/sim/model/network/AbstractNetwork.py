@@ -1,7 +1,8 @@
 from abc import ABCMeta, abstractmethod
 
-from g5dbc.sim.model.topology import AbstractTopology
 from g5dbc.sim.model.interconnect.ruby.node import AbstractNode
+from g5dbc.sim.model.topology import AbstractTopology
+
 
 class AbstractNetwork:
     """
@@ -26,9 +27,4 @@ class AbstractNetwork:
     def connect_interfaces(self):
         """
         connect interfaces on the network
-        """
-
-    @abstractmethod
-    def get_num_virtual_networks(self) -> int:
-        """
         """
