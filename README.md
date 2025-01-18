@@ -3,62 +3,44 @@
 A Declarative Benchmark Configuration Framework
 for architecture exploration with [gem5](https://www.gem5.org/).
 
+## Installation
+
+### Prerequisites
+
+To use gem5-dbc you need to provide all binary artifacts
+required for configuring and running a full system simulation.
+
+This repository contains a set of [Packer](https://developer.hashicorp.com/packer)
+templates for building all needed binaries.
+For more details, see [artifacts/README.md](artifacts/README.md).
+
+After succesful building of all binary artifacts,
+an index file `artifacts.yaml` is generated containing
+binary metadata and checksum information.
+
+## Install gem5-dbc
+
+```bash
+# Install gem5-dbc package locally
+pip install --user git+https://github.com/FZJ-JSC/gem5-dbc.git@develop
+
+# Configure gem5 binary
+g5dbc --configure GEM5 gem5/build/ARM/gem5.opt
+```
+
 ## Simulation Workflow
 
-### Prepare your local system
-
-Specify local directories containing gem5-dbc source files and needed simulation artifacts
+### Benchmark simulation scripts generation
 
 ```bash
-# Set the correct paths for your system
-export G5DBC_SOURCE=$HOME/sources/gem5-dbc
-export G5DBC_PREFIX=/opt/g5dbc
-```
-### Prepare resources directory
-
-To use gem5-dbc you need to first configure a directory `$G5DBC_PREFIX` containing
-different resources needed for configuring and running a full system simulation.
-
-The compiled gem5 executable should be copied to `$G5DBC_PREFIX/bin/gem5.bin`.
-```bash
-cp  gem5/build/ARM/gem5.opt $G5DBC_PREFIX/bin/gem5.bin
-```
-
-The `$G5DBC_SOURCE/share` directory should be copied to `$G5DBC_PREFIX/share`.
-```bash
-cp -rv $G5DBC_SOURCE/share $G5DBC_PREFIX
-```
-
-The artifacts directory and corresponding index
-can be generated using the provided [Packer](https://developer.hashicorp.com/packer)
-templates, see [artifacts/README.md](artifacts/README.md).
-
-After the build is finished, the created directory `artifacts`
-and file `artifacts.yaml` can be copied to `$G5DBC_PREFIX/share/g5dbc`.
-
-The resulting directory structure of `$G5DBC_PREFIX` should be as follows
-
-| File | Description |
-| ---- | ----------- |
-| $G5DBC_PREFIX/bin/gem5.bin               | gem5 binary        |
-| $G5DBC_PREFIX/share/g5dbc/artifacts.yaml | Artifact index     |
-| $G5DBC_PREFIX/share/g5dbc/artifacts      | Artifact directory |
-| $G5DBC_PREFIX/share/g5dbc/benchmarks     | Default benchmarks directory     |
-| $G5DBC_PREFIX/share/g5dbc/configs        | Default configurations directory |
-| $G5DBC_PREFIX/share/g5dbc/parser         | Default parser regexps directory |
-| $G5DBC_PREFIX/share/g5dbc/templates      | Default templates directory      |
-
-
-### Benchmark generation
-
-```bash
-# Generate set of simple benchmark scripts for stream using example system-single.yaml configuration
-$G5DBC_SOURCE/src/main.py --path-prefix $G5DBC_PREFIX --benchmark-mod stream.py --benchmark-cfg system-single.yaml  --generate
+# Generate simulation scripts for stream benchmark and example architecture configuration
+# Include $ARTIFACTS directory containing artifacts.yaml index
+g5dbc --generate stream simple-2CPUs-SimpleMem --artifacts-dir $ARTIFACTS
 ```
 
 ### Benchmark results evaluation
 
 ```bash
-# Parse results to json
-$G5DBC_SOURCE/main.py --path-prefix $G5DBC_PREFIX --benchmark-mod stream.py  --parse
+# Parse the generated benchmark statistics to flat JSON
+g5dbc --parse stream
 ```
