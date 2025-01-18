@@ -1,32 +1,37 @@
 from dataclasses import dataclass
 
-from g5dbc import AbstractBenchmark
-from g5dbc import Config
+from g5dbc import AbstractBenchmark, Config
+
 
 @dataclass
 class Params:
-    sve_vl: int
-    mem_lat: int
     kernel: str
     size: int
+    sve_vl: int
+    mem_bw: int
     reps: int
+
 
 class stream(AbstractBenchmark):
 
-    def get_varparams(self) -> dict[str,list]:
+    def get_varparams(self) -> dict[str, list]:
         """Return a list of iterateble parameters
 
         Returns:
             dict[str,list]: list of iterateble parameters
         """
         return dict(
-            sve_vl   = [256, 512],
-            mem_lat  = [5,10,50,100],
             # Kernel
-            kernel = ["triad"],
-            size = [int(3E5),int(8E5),],
+            kernel=["triad"],
+            size=[
+                int(3e5),
+                int(8e5),
+            ],
+            # System
+            sve_vl=[256, 512],
+            mem_bw=[20, 40, 60, 80, 100],
             # Reps
-            reps = [5,],
+            reps=[5],
         )
 
     def filter_varparams(self, conf: Config, params: dict) -> bool:
@@ -55,7 +60,9 @@ class stream(AbstractBenchmark):
 
         conf.system.sve_vl = p.sve_vl
         for region in conf.memory.regions:
-            region.latency = f"{p.mem_lat}ns"
+            region.model = "Simple"
+            region.bandwidth = f"{p.mem_bw}GiB/s"
+            region.channels = 2
 
         return conf
 
@@ -68,18 +75,18 @@ class stream(AbstractBenchmark):
         Returns:
             dict: Dictionary of environment variables
         """
-        sve_vl   = conf.system.sve_vl
+        sve_vl = conf.system.sve_vl
         num_cpus = conf.system.num_cpus
 
         env_dict = dict(
             # Execution environment should not move OpenMP threads
-            OMP_PROC_BIND = "true",
-            OMP_DISPLAY_ENV = "verbose",
-            OMP_DISPLAY_AFFINITY = "true",
-            OMP_AFFINITY_FORMAT = "%0.3L %.8n %i %.10A %.12H",
-            OMP_NUM_THREADS = f"{num_cpus}",
-            GOMP_CPU_AFFINITY = f"0-{num_cpus-1}" if (num_cpus>1) else "0",
-            SVE_VEC_LEN = int(sve_vl/8)
+            OMP_PROC_BIND="true",
+            OMP_DISPLAY_ENV="verbose",
+            OMP_DISPLAY_AFFINITY="true",
+            OMP_AFFINITY_FORMAT="%0.3L %.8n %i %.10A %.12H",
+            OMP_NUM_THREADS=f"{num_cpus}",
+            GOMP_CPU_AFFINITY=f"0-{num_cpus-1}" if (num_cpus > 1) else "0",
+            SVE_VEC_LEN=int(sve_vl / 8),
         )
         return env_dict
 
@@ -97,7 +104,7 @@ class stream(AbstractBenchmark):
         # Path in Linux image file
         bin_dir = "/benchmarks/bin"
 
-        size = conf.system.num_cpus*params.size
+        size = conf.system.num_cpus * params.size
 
         # Construct command line to be executed
         command = f"{bin_dir}/mini_{params.kernel}-m5.x {size} {params.reps}"

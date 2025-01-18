@@ -14,15 +14,25 @@ system:
     - simple
     - arm
 
-branch_predictor:
-  BiMode: &BP1
+branch_pred:
+  BiMode:
     model: BiMode
-    BTBEntries: 4096
-    BTBTagSize: 16
+    params:
+      globalPredictorSize: 8192
+      choicePredictorSize: 8192
+    BTB:
+      numEntries: 4096
+      tagBits: 16
   Tournament:
     model: Tournament
-    BTBEntries: 4096
-    BTBTagSize: 16
+    params:
+      localPredictorSize: 2048
+      localHistoryTableSize: 2048
+      globalPredictorSize: 8192
+      choicePredictorSize: 8192
+    BTB:
+      numEntries: 4096
+      tagBits: 16
 
 cpus:
   simple:
