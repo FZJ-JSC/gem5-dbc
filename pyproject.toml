@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gem5-dbc"
+version = "0.9.1"
+authors = [
+  { name="Carlos Falquez", email="c.falquez@fz-juelich.de" },
+]
+
+dependencies = [
+  "platformdirs",
+  "pyyaml>=6.0",
+]
+
+description = "gem5 declarative benchmark configuration"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/g5dbc"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"share/gem5-dbc" = "share/gem5-dbc"
+
+[project.scripts]
+g5dbc = 'g5dbc.main:main'
+
+[project.urls]
+Homepage = "https://github.com/FZJ-JSC/gem5-dbc"
+Issues   = "https://github.com/FZJ-JSC/gem5-dbc/issues"
