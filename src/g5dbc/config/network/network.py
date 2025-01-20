@@ -1,9 +1,11 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
+
 
 @dataclass
 class TopologyConf:
     model: str
     parameters: dict = field(default_factory=dict)
+
 
 @dataclass
 class NetworkConf:
@@ -12,7 +14,7 @@ class NetworkConf:
     node_vnet_support: list[list[int]]
 
     data_width: int = 64
-    clock:  str = ""
+    clock: str = ""
     router_latency: int = 1
 
     n_vnets: int = 4
@@ -23,9 +25,9 @@ class NetworkConf:
     node_link_latency: int = 1
     cross_numa_latency: int = 1
 
-    topology: dict[str,TopologyConf] = field(default_factory=dict)
+    topology: dict[str, TopologyConf] = field(default_factory=dict)
 
     def __post_init__(self):
-        for k,v in self.topology.items():
+        for k, v in self.topology.items():
             if isinstance(v, dict):
                 self.topology[k] = TopologyConf(**v)

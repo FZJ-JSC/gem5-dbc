@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
 
 @dataclass
 class PrefetcherConf:
     name: str
-    model : str
-    degree: int = 8
-
+    model: str
+    settings: dict = field(default_factory=dict)

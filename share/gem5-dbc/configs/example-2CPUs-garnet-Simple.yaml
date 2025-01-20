@@ -14,10 +14,10 @@ system:
     - simple
     - arm
 
-branch_pred:
+bpred:
   BiMode:
     model: BiMode
-    params:
+    settings:
       globalPredictorSize: 8192
       choicePredictorSize: 8192
     BTB:
@@ -25,7 +25,7 @@ branch_pred:
       tagBits: 16
   Tournament:
     model: Tournament
-    params:
+    settings:
       localPredictorSize: 2048
       localHistoryTableSize: 2048
       globalPredictorSize: 8192
@@ -38,7 +38,7 @@ cpus:
   simple:
     model: AtomicSimple
     clock: 2.6GHz
-  arm: !include cpus/simple-arm-8.yaml
+  arm: !include cpus/example-arm-cpu.yaml
 
 memory:
   controller:
@@ -67,6 +67,7 @@ caches:
       mshrs: 96
       tgts_per_mshr: 16
       write_buffers: 24
+      writeback_clean: True
 
   L1D:
     size: 64kB
@@ -85,6 +86,7 @@ caches:
       mshrs: 96
       tgts_per_mshr: 16
       write_buffers: 24
+      writeback_clean: True
 
   L2:
     size: 1MB
@@ -103,6 +105,7 @@ caches:
       tgts_per_mshr: 16
       write_buffers: 24
       xbar_width: 64
+      writeback_clean: True
 
   SLC:
     size: 2MB
@@ -135,13 +138,55 @@ caches:
       xbar_width: 64
       snoop_filter_max_capacity: "8MiB"
 
+  IWC:
+    size: 8KiB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+      response: 1
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+      writeback_clean: True
+  DWC:
+    size: 8KiB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+      response: 1
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+      writeback_clean: True
+  CoherentIO:
+    size: 1kB
+    assoc: 8
+    latency: 
+      tag: 50
+      data: 50
+      response: 50
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+
 prefetcher:
   L1I:
     model: Tagged
+    settings:
+      degree: 2
   L1D:
     model: Tagged
+    settings:
+      degree: 2
   L2:
     model: Tagged
+    settings:
+      degree: 2
 
 network:
   clock: 2.6GHz
@@ -156,6 +201,8 @@ network:
     simple: !include topology/simple-2x3-single.yaml
 
 interconnect:
+  classic:
+    slcs_per_core: 1
   garnet:
     data_width: 64
     vcs_per_vnet: 16

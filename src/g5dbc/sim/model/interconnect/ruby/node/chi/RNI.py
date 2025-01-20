@@ -1,6 +1,6 @@
 from g5dbc.config import Config
 from g5dbc.config.caches import CacheConf
-from g5dbc.config.caches.controller import CacheCtrlConfig
+from g5dbc.config.caches.controller import CacheCtrlConf
 from g5dbc.config.caches.latency import Latency
 from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
 from g5dbc.sim.model.interconnect.ruby.controller import AbstractController
@@ -27,7 +27,7 @@ class RNI(AbstractNode):
             size="1024",
             assoc=1,
             latency=Latency(data=0, tag=1),
-            controller=CacheCtrlConfig(
+            controller=CacheCtrlConf(
                 allow_SD=False,
                 is_HN=False,
                 enable_DMT=False,

@@ -1,1 +1,2 @@
-from .memory import MemoryConf, MemoryRegionConfig
+from .memory import MemoryConf
+from .region import MemoryRegionConfig

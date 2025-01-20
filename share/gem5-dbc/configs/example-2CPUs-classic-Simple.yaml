@@ -1,0 +1,218 @@
+# Example configuration
+
+system:
+  num_cpus: 2
+  clock: 2.6GHz
+  cpu_clock: 2.6GHz
+  voltage: 1.0V
+  platform: VExpress_GEM5_V1
+  sve_vl: 256
+  interconnect: classic
+  topology: simple
+  cache_line_size: 64
+  cpus:
+    - simple
+    - arm
+
+bpred:
+  BiMode:
+    model: BiMode
+    settings:
+      globalPredictorSize: 8192
+      choicePredictorSize: 8192
+    BTB:
+      numEntries: 4096
+      tagBits: 16
+  Tournament:
+    model: Tournament
+    settings:
+      localPredictorSize: 2048
+      localHistoryTableSize: 2048
+      globalPredictorSize: 8192
+      choicePredictorSize: 8192
+    BTB:
+      numEntries: 4096
+      tagBits: 16
+
+cpus:
+  simple:
+    model: AtomicSimple
+    clock: 2.6GHz
+  arm: !include cpus/example-arm-cpu.yaml
+
+memory:
+  controller:
+    number_of_TBEs: 256
+  regions:
+    - model: Simple
+      size: 1GB
+      channels: 2
+      bandwidth: "60GiB/s"
+      latency: "5ns"
+caches:
+  L1I:
+    size: 64kB
+    assoc: 4
+    latency:
+      tag: 1
+      data: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      mandatory_queue_latency: 1
+      alloc_on_seq_acc: True
+      alloc_on_seq_line_write: False
+      send_evictions: Yes
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+      writeback_clean: True
+
+  L1D:
+    size: 64kB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+    sequencer:
+      max_outstanding_requests: 256
+    controller:
+      mandatory_queue_latency: 1
+      alloc_on_seq_acc: True
+      alloc_on_seq_line_write: False
+      send_evictions: Yes
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+      writeback_clean: True
+
+  L2:
+    size: 1MB
+    assoc: 8
+    latency:
+      tag: 1
+      data: 4
+      response: 4
+    controller:
+      number_of_snoop_TBEs: 128
+      number_of_DVM_TBEs: 1
+      number_of_DVM_snoop_TBEs: 1
+      send_evictions: False
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+      xbar_width: 64
+      writeback_clean: True
+
+  SLC:
+    size: 2MB
+    assoc: 16
+    system_shared: Yes
+    latency: 
+      tag: 1
+      data: 10
+      response: 10
+    controller:
+      is_HN: True
+      enable_DMT: True
+      enable_DCT: True
+      # MOESI / Mostly inclusive for shared / Exclusive for unique
+      alloc_on_atomic: True
+      alloc_on_readunique: False
+      dealloc_on_unique: True
+      dealloc_backinv_unique: False
+      dealloc_backinv_shared: False
+      send_evictions: False
+      number_of_snoop_TBEs     : 1
+      number_of_DVM_TBEs       : 1
+      number_of_DVM_snoop_TBEs : 1
+    classic:
+      mshrs: 96
+      tgts_per_mshr: 16
+      write_buffers: 24
+      writeback_clean: False
+      clusivity: mostly_excl
+      xbar_width: 64
+      snoop_filter_max_capacity: "8MiB"
+
+  IWC:
+    size: 8KiB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+      response: 1
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+      writeback_clean: True
+  DWC:
+    size: 8KiB
+    assoc: 4
+    latency: 
+      tag: 1
+      data: 1
+      response: 1
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+      writeback_clean: True
+  CoherentIO:
+    size: 1kB
+    assoc: 8
+    latency: 
+      tag: 50
+      data: 50
+      response: 50
+    classic:
+      mshrs: 20
+      tgts_per_mshr: 12
+      write_buffers: 16
+
+prefetcher:
+  L1I:
+    model: Tagged
+    settings:
+      degree: 2
+  L1D:
+    model: Tagged
+    settings:
+      degree: 2
+  L2:
+    model: Tagged
+    settings:
+      degree: 2
+
+network:
+  clock: 2.6GHz
+  mesh_vnet_support: [[0,1,2,3]]
+  node_vnet_support: [[0,1,2,3]]
+  router_latency: 1
+  mesh_link_latency: 1
+  node_link_latency: 1
+  cross_numa_latency: 1
+
+  topology:
+    simple: !include topology/simple-2x3-single.yaml
+
+interconnect:
+  classic:
+    slcs_per_core: 1
+  garnet:
+    data_width: 64
+    vcs_per_vnet: 16
+    routing_algorithm: 0
+    # network-level deadlock threshold
+    deadlock_threshold: 500000
+    use_link_bridges: False
+  simple:
+    link_bandwidth: 64
+
+simulation:
+  full_system: True
+  max_seconds: 600.0

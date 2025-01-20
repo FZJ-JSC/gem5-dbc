@@ -1,10 +1,10 @@
-from g5dbc.config.pred import BPConf
-from g5dbc.sim.m5_objects.pred import m5_BiModeBP, m5_SimpleBTB, m5_TournamentBP
+from g5dbc.config.bpred import BPredConf
+from g5dbc.sim.m5_objects.cpu.bpred import m5_BiModeBP, m5_SimpleBTB, m5_TournamentBP
 
 
-class BPFactory:
+class BPredFactory:
     @staticmethod
-    def create(bp_conf: BPConf):
+    def create(bp_conf: BPredConf):
         bp = None
         btb = m5_SimpleBTB(**bp_conf.BTB.to_dict())
         match bp_conf.model:

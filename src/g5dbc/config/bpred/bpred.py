@@ -12,11 +12,11 @@ class BTBConf:
 
 
 @dataclass
-class BPConf:
+class BPredConf:
     name: str
     model: str
     BTB: BTBConf
-    params: dict = field(default_factory=dict)
+    settings: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if isinstance(self.BTB, dict):

@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 from ..config import Config
 from ..util import iterate
+
 
 class AbstractBenchmark(ABC):
     """
@@ -29,7 +30,7 @@ class AbstractBenchmark(ABC):
         """
 
     @abstractmethod
-    def get_varparams(self) -> dict[str,list]:
+    def get_varparams(self) -> dict[str, list]:
         """
         Return iteratable parameters
         """
@@ -54,25 +55,22 @@ class AbstractBenchmark(ABC):
 
         return params_dict
 
-
     def get_parameter_list(self, config: Config) -> list[dict]:
         """
-
+        Get filtered parameter list
         """
-        parameters = [p for p in iterate(self.get_varparams()) if self.filter_varparams(config, p)]
-        assert(len(parameters) > 0)
+        parameters = [
+            p for p in iterate(self.get_varparams()) if self.filter_varparams(config, p)
+        ]
+        assert len(parameters) > 0
         return parameters
 
-
     def parse_output_log(self, output_file: Path) -> dict:
+        if not output_file.exists():
+            return dict()
         output_log = output_file.read_text()
-        cdict : dict = dict(
-            aborted = dict(),
-            links = dict(),
-            router = dict(),
-            network = dict(
-                links = list()
-            )
+        cdict: dict = dict(
+            aborted=dict(), links=dict(), router=dict(), network=dict(links=list())
         )
 
         for l in iter(output_log.splitlines()):
@@ -83,50 +81,6 @@ class AbstractBenchmark(ABC):
                 continue
             else:
                 cdict["aborted"]["backtrace"] = False
-
-            p = r"R(\d+)\.L(\d+)\.R(\d+)"
-            m = re.search(p, l)
-            if m:
-                src  = int(m.group(1))
-                link = int(m.group(2))
-                dst  = int(m.group(3))
-                cdict["links"][link] = {}
-                cdict["links"][link]["src"] = src
-                cdict["links"][link]["dst"] = dst
-                continue
-
-            p = r"EXT.(\w+)\.(\d+)\.(\w+)\.L(\d+)\.R(\d+)"
-            m = re.search(p, l)
-            if m:
-                node   = m.group(1)
-                ctrlId = int(m.group(2))
-                ctrl   = m.group(3)
-                link   = int(m.group(4))
-                router = int(m.group(5))
-
-                cdict["router"][router] = dict(
-                    node=node
-                )
-
-                continue
-
-            p = r"make(\w+)Link src=(\d+) (\w+)Id=(\d+) linkId=(\d+) dest=(\d+) (\w+)Id=(\d+)"
-            m = re.search(p, l)
-            if m:
-                item = dict(
-                    linkType = m.group(1),
-                    src = int(m.group(2)),
-                    srcType = m.group(3),
-                    srcId = int(m.group(4)),
-                    linkId = int(m.group(5)),
-                    dst = int(m.group(6)),
-                    dstType = m.group(7),
-                    dstId = int(m.group(8)),
-                )
-
-                cdict["network"]["links"].append(item)
-
-                continue
 
         return cdict
 
