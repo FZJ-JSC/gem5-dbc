@@ -12,10 +12,15 @@ DISK_PATH=$BUILD_ARCH/disks/$DISK_NAME
 DISK_HASH=$(md5_hash_file $BUILD_DIR/$DISK_PATH)
 DISK_VER="Debian ${BUILD_VERSION}"
 
-BOOT_NAME="boot_v2.arm64"
-BOOT_PATH=$BUILD_ARCH/binaries/$BOOT_NAME
-BOOT_HASH=$(md5_hash_file $BUILD_DIR/$BOOT_PATH)
-BOOT_VER="v2"
+BOOT1_NAME="boot.arm64"
+BOOT1_PATH=$BUILD_ARCH/binaries/$BOOT1_NAME
+BOOT1_HASH=$(md5_hash_file $BUILD_DIR/$BOOT1_PATH)
+BOOT1_VER="V1"
+
+BOOT2_NAME="boot_v2.arm64"
+BOOT2_PATH=$BUILD_ARCH/binaries/$BOOT2_NAME
+BOOT2_HASH=$(md5_hash_file $BUILD_DIR/$BOOT2_PATH)
+BOOT2_VER="V2"
 
 KERNEL_NAME="vmlinux"
 KERNEL_PATH=$BUILD_ARCH/binaries/$KERNEL_NAME
@@ -37,9 +42,15 @@ $BUILD_ARCH:
   version: "$KERNEL_VER"
   metadata: earlyprintk=pl011,0x1c090000 console=ttyAMA0 lpj=19988480 norandmaps rw loglevel=8
 - bintype: "BOOT"
-  name:    $BOOT_NAME
-  path:    $ARTIFACTS_BASE/$BOOT_PATH
-  md5hash: $BOOT_HASH
-  version: $BOOT_VER
-  metadata: VExpress_GEM5_V2
+  name:    $BOOT1_NAME
+  path:    $ARTIFACTS_BASE/$BOOT1_PATH
+  md5hash: $BOOT1_HASH
+  version: $BOOT1_VER
+  metadata: VExpress_GEM5_$BOOT1_VER
+- bintype: "BOOT"
+  name:    $BOOT2_NAME
+  path:    $ARTIFACTS_BASE/$BOOT2_PATH
+  md5hash: $BOOT2_HASH
+  version: $BOOT2_VER
+  metadata: VExpress_GEM5_$BOOT2_VER
 EOL
