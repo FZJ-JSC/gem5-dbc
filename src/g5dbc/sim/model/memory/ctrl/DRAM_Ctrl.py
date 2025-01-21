@@ -1,10 +1,12 @@
 from g5dbc.config.memory import MemoryRegionConfig
 from g5dbc.sim.m5_objects import m5_AddrRange
-from g5dbc.sim.m5_objects.mem import m5_MemCtrl, m5_DRAMInterface
+from g5dbc.sim.m5_objects.mem import m5_DRAMInterface, m5_MemCtrl
+
 from ..AbstractMemCtrl import AbstractMemCtrl
 
+
 class DRAM_Ctrl(m5_MemCtrl, AbstractMemCtrl):
-    
+
     def __init__(self, config: MemoryRegionConfig, ctrl_id: int = 0):
         super().__init__()
 
@@ -23,8 +25,8 @@ class DRAM_Ctrl(m5_MemCtrl, AbstractMemCtrl):
     def set_addr_range(self, addr_range: m5_AddrRange) -> None:
         self.dram.range = addr_range
 
-    def connect_memory_port(self, ctrl) -> None:
-        self.port = ctrl.memory_out_port
+    def connect_memory_port(self, memory_out_port) -> None:
+        self.port = memory_out_port
 
     def get_addr_ranges(self) -> list[m5_AddrRange]:
         return [self.dram.range]

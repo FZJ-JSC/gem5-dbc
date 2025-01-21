@@ -5,7 +5,7 @@ from g5dbc.config.memory import MemoryRegionConfig
 from g5dbc.sim.m5_objects import m5_Addr, m5_AddrRange
 from g5dbc.sim.m5_objects.arch import m5_ArmFsLinux, m5_ArmSystem
 from g5dbc.sim.m5_objects.dev import m5_PciVirtIO, m5_VirtIOBlock
-from g5dbc.sim.m5_objects.io import m5_IOXBar
+from g5dbc.sim.m5_objects.io import m5_BadAddr, m5_Bridge, m5_IOXBar, m5_SystemXBar
 from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
 from g5dbc.sim.model.cpu import AbstractProcessor
 from g5dbc.sim.model.interconnect import CoherentInterconnect
@@ -22,25 +22,21 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         self._config = config
 
-        self._pci_devices = []
-        self._dma_ports = []
-        self._mem_ports = []
-
         self.create_system_clocks(config)
-
-        self.create_IO_bus(config)
 
         self.init_board()
 
+        self.create_IO_bus()
+
         # @TODO: Set mem_mode
 
-        self.configure_system_boot(config)
+        self.attach_chip_IO()
 
-        self.attach_chip_io(config)
+        self.attach_disk_images()
 
-        self.attach_disk_images(config)
+        self.attach_pci_devices()
 
-        self.attach_pci_devices(config)
+        self.configure_system_boot()
 
     def init_board(self) -> None:
         config = self._config
@@ -54,6 +50,118 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         self.mem_ranges = self.create_memory_ranges(config.memory.regions)
         # Set NUMA ids of memory ranges for DTB
         self.set_mem_range_numa_ids([r.numa_id for r in config.memory.regions])
+
+    def create_IO_bus(self):
+        config = self._config
+
+        self._pci_devices = []
+        self._dma_ports = [] if not config.system.is_classic() else None
+        self._mem_ports = []
+
+        # Configure IO Bus
+        self.iobus = m5_IOXBar()
+        self.iobus.badaddr_responder = m5_BadAddr()
+        self.iobus.default = self.iobus.badaddr_responder.pio
+
+        if config.system.is_classic():
+            # Configure MemBus and IO Bridge
+            self.membus = m5_SystemXBar(width=64)
+
+            self.iobridge = m5_Bridge(delay="50ns")
+
+            self.membus.badaddr_responder = m5_BadAddr()
+            self.membus.badaddr_responder.warn_access = "warn"
+            self.membus.default = self.membus.badaddr_responder.pio
+
+            self.iobridge.mem_side_port = self.iobus.cpu_side_ports
+            self.iobridge.cpu_side_port = self.membus.mem_side_ports
+
+    def get_IO_bus(self) -> m5_IOXBar:
+        return self.iobus
+
+    def get_MEM_bus(self) -> m5_SystemXBar | None:
+        if self._config.system.is_classic():
+            return self.membus
+        else:
+            return None
+
+    def get_DMA_ports(self) -> list:
+        """
+        Return a list of m5.objects.Port
+        """
+        return self._dma_ports
+
+    def attach_chip_IO(self):
+        if self._config.system.is_classic():
+            self.realview.attachOnChipIO(bus=self.membus, bridge=self.iobridge)
+        else:
+            # self.realview.attachOnChipIO does the following:
+            # - For self._mem_ports != None, fills self._mem_ports with on-chip memory ports,
+            #    otherwise automatically connects  on-chip memory ports to given bus.
+            # - For self._dma_ports != None,
+            self.realview.attachOnChipIO(
+                bus=self.iobus, dma_ports=self._dma_ports, mem_ports=self._mem_ports
+            )
+
+        self.realview.attachIO(bus=self.iobus, dma_ports=self._dma_ports)
+
+    def attach_disk_images(self):
+        config = self._config
+
+        # Setup VirtIO disk images
+        disk_images = config.search_artifact("DISK")
+        paths = [str(v.path) for k, v in disk_images.items()]
+        disks = [FileDiskImage(f) for f in paths]
+
+        self.pci_vio_block = [
+            m5_PciVirtIO(vio=m5_VirtIOBlock(image=img)) for img in disks
+        ]
+
+        for dev in self.pci_vio_block:
+            self._pci_devices.append(dev)
+
+    def attach_pci_devices(self):
+        for dev in self._pci_devices:
+            self.realview.attachPciDevice(
+                dev, self.get_IO_bus(), dma_ports=self.get_DMA_ports()
+            )
+
+    def configure_system_boot(self):
+        config = self._config
+
+        output_dir = Path(config.simulation.output_dir)
+        kernels = config.search_artifact("KERNEL")
+        bootloaders = config.search_artifact("BOOT")
+        disk_images = config.search_artifact("DISK")
+        bootloader_path = [
+            v.path
+            for k, v in bootloaders.items()
+            if v.metadata == config.system.platform
+        ]
+        root_partition = [v.metadata for k, v in disk_images.items()]
+
+        if not kernels:
+            raise ValueError(f"Kernel list empty")
+        if not bootloader_path:
+            raise ValueError(f"Bootloader list empty")
+        if not root_partition:
+            raise ValueError(f"Disk image list empty")
+
+        # Assume first disk in list to be root disk
+        self.workload = m5_ArmFsLinux(
+            output_dir=str(output_dir),
+            command_line=f"{kernels["vmlinux"].metadata} root={root_partition[0]}",
+            kernel_path=str(kernels["vmlinux"].path),
+        )
+
+        # Use first bootloader in list
+        self.realview.setupBootLoader(self, lambda name: str(bootloader_path[0]))
+
+        self.readfile = str(output_dir.joinpath(config.simulation.work_script))
+
+    def set_mem_range_numa_ids(self, ids: list[int]) -> None:
+        """ """
+        # self.mem_range_numa_ids = ids
 
     def create_memory_ranges(
         self, regions: list[MemoryRegionConfig]
@@ -78,7 +186,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         # Set Memory access mode
         mem_mode = processor.get_active_mem_mode()
         # Ruby only supports atomic accesses in noncaching mode
-        if f"{mem_mode}" == "atomic" and config.system.activeNOC():
+        if f"{mem_mode}" == "atomic" and not config.system.is_classic():
             mem_mode = "atomic_noncaching"
 
         self.mem_mode = mem_mode
@@ -100,9 +208,9 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         self.interconnect = interconnect
 
-        iobus = self.get_IO_bus()
-        if iobus:
-            interconnect.connect_IO_bus(iobus)
+        interconnect.connect_IO_bus(self.get_IO_bus())
+
+        interconnect.connect_MEM_bus(self.get_MEM_bus())
 
         interconnect.connect_board_port(self.system_port)
 
@@ -124,7 +232,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         interconnect.connect_rom_nodes(self.get_board_memories())
 
-        interconnect.connect_dma_nodes(self.get_dma_ports())
+        interconnect.connect_dma_nodes(self.get_DMA_ports())
 
         interconnect.connect_network()
 
@@ -134,12 +242,6 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
     def get_board_procesor(self) -> AbstractProcessor:
         return self.cpus
-
-    def get_IO_bus(self) -> m5_IOXBar | None:
-        if self.iobus is not None:
-            return self.iobus
-        else:
-            raise None
 
     def get_board_memories(self) -> list[m5_SimpleMemory]:
 
@@ -159,85 +261,6 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
     def get_mem_ranges(self) -> list[m5_AddrRange]:
         return self.mem_ranges
-
-    def get_dma_ports(self) -> list:
-        """
-        Return a list of m5.objects.Port
-        """
-        return self._dma_ports
-
-    def configure_system_boot(self, config: Config):
-        output_dir = Path(config.simulation.output_dir)
-        kernels = config.search_artifact("KERNEL")
-        bootloaders = config.search_artifact("BOOT")
-        disk_images = config.search_artifact("DISK")
-
-        bootloader_path = [
-            v.path
-            for k, v in bootloaders.items()
-            if v.metadata == config.system.platform
-        ]
-        root_partition = [v.metadata for k, v in disk_images.items()]
-
-        if not kernels:
-            raise ValueError(f"Kernel list empty")
-        if not bootloader_path:
-            raise ValueError(f"Bootloader list empty")
-        if not root_partition:
-            raise ValueError(f"Disk image list empty")
-
-        # Assume first disk in list to be root disk
-        command_line = kernels["vmlinux"].metadata + f" root={root_partition[0]}"
-        kernel_path = str(kernels["vmlinux"].path)
-        # Use first bootloader in list
-        bootloader_path = str(bootloader_path[0])
-        work_script = str(output_dir.joinpath(config.simulation.work_script))
-
-        self.workload = m5_ArmFsLinux(
-            output_dir=str(output_dir),
-            command_line=command_line,
-            kernel_path=kernel_path,
-        )
-
-        self.realview.setupBootLoader(self, lambda name: bootloader_path)
-
-        self.readfile = work_script
-
-    def attach_chip_io(self, config: Config):
-
-        if config.system.activeNOC():
-            # self.realview.attachOnChipIO does the following:
-            # - For self._mem_ports != None, fills self._mem_ports with on-chip memory ports,
-            #    otherwise automatically connects  on-chip memory ports to given bus.
-            # - For self._dma_ports != None,
-            self.realview.attachOnChipIO(
-                bus=self.iobus, dma_ports=self._dma_ports, mem_ports=self._mem_ports
-            )
-            self.realview.attachIO(bus=self.iobus, dma_ports=self._dma_ports)
-        else:
-            self.realview.attachOnChipIO(bus=self.membus, bridge=self.iobridge)
-            self.realview.attachIO(bus=self.iobus)
-
-    def attach_disk_images(self, config: Config):
-        # Setup VirtIO disk images
-        disk_images = config.search_artifact("DISK")
-        paths = [str(v.path) for k, v in disk_images.items()]
-        disks = [FileDiskImage(f) for f in paths]
-
-        self.pci_vio_block = [
-            m5_PciVirtIO(vio=m5_VirtIOBlock(image=img)) for img in disks
-        ]
-
-        for dev in self.pci_vio_block:
-            self._pci_devices.append(dev)
-
-    def attach_pci_devices(self, config: Config):
-        is_active = config.system.activeNOC()
-
-        for dev in self._pci_devices:
-            self.realview.attachPciDevice(
-                dev, self.iobus, dma_ports=self._dma_ports if is_active else None
-            )
 
     # @TODO: DTB only needed for Arm systems
     def generate_dtb(self) -> None:

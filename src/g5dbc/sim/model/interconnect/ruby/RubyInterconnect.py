@@ -2,11 +2,11 @@ from g5dbc.config import Config
 from g5dbc.sim.factory.network import NetworkFactory
 from g5dbc.sim.factory.topology.ruby import RubyTopologyFactory
 from g5dbc.sim.m5_objects import m5_AddrRange
-from g5dbc.sim.m5_objects.io import m5_IOXBar
+from g5dbc.sim.m5_objects.io import m5_IOXBar, m5_SystemXBar
 from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
 from g5dbc.sim.m5_objects.ruby import m5_RubyPortProxy, m5_RubySystem
 from g5dbc.sim.model.cpu import AbstractProcessor
-from g5dbc.sim.model.interconnect.CoherentInterconnect import CoherentInterconnect
+from g5dbc.sim.model.interconnect import CoherentInterconnect
 from g5dbc.sim.model.memory import AbstractMemSystem
 from g5dbc.sim.model.topology import NodeSpec
 
@@ -55,10 +55,6 @@ class RubyInterconnect(CoherentInterconnect):
         for node in [*self.rnf, *self.hnf, *self.snf, *self.pio]:
             node.create_controller(config, self.ruby_system)
 
-    def connect_board_port(self, system_port):
-        self.ruby_system.sys_port_proxy = m5_RubyPortProxy(ruby_system=self.ruby_system)
-        self.ruby_system.sys_port_proxy.in_ports = system_port
-
     def connect_IO_bus(self, iobus: m5_IOXBar) -> None:
         for node in self.rnf:
             dcache_seq, _ = node.get_sequencers()
@@ -67,6 +63,13 @@ class RubyInterconnect(CoherentInterconnect):
         # Setup IO port
         for seq in self.pio[0].get_sequencers():
             iobus.mem_side_ports = seq.in_ports
+
+    def connect_MEM_bus(self, membus: m5_SystemXBar) -> None:
+        pass
+
+    def connect_board_port(self, system_port):
+        self.ruby_system.sys_port_proxy = m5_RubyPortProxy(ruby_system=self.ruby_system)
+        self.ruby_system.sys_port_proxy.in_ports = system_port
 
     def connect_cpu_nodes(self, processor: AbstractProcessor) -> None:
         assert processor.get_num_cpus() == len(self.rnf)
@@ -91,10 +94,10 @@ class RubyInterconnect(CoherentInterconnect):
             icache_id = icache_seq.get_version()
 
             core.set_numa_id(numa_id)
-            core.connect_dcache(dcache_seq)
-            core.connect_icache(icache_seq)
+            core.connect_dcache(dcache_seq.in_ports)
+            core.connect_icache(icache_seq.in_ports)
 
-            core.connect_walker_ports(dcache_seq, icache_seq)
+            core.connect_walker_ports(dcache_seq.in_ports, icache_seq.in_ports)
             core.connect_interrupt()
 
     def connect_slc_nodes(self, slc_ranges: list[list[m5_AddrRange]]) -> None:
@@ -138,7 +141,7 @@ class RubyInterconnect(CoherentInterconnect):
             mem_ctrl = mem_sys.get_mem_ctrl(numa_id, ctrl_id)
 
             for ctrl in node.get_controllers():
-                mem_ctrl.connect_memory_port(ctrl)
+                mem_ctrl.connect_memory_port(ctrl.memory_out_port)
                 ctrl.set_addr_ranges(mem_ctrl.get_addr_ranges())
 
     def connect_rom_nodes(self, mems: list[m5_SimpleMemory]):

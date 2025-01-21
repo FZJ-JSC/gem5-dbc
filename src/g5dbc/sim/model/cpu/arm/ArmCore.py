@@ -1,7 +1,6 @@
 from g5dbc.config import Config
 from g5dbc.config.cpus import CoreFUDesc, CPUConf
 from g5dbc.sim.m5_objects.cpu import m5_ArmO3CPU, m5_FUDesc, m5_FUPool, m5_OpDesc
-from g5dbc.sim.m5_objects.ruby import Sequencer
 
 from ..AbstractCore import AbstractCore
 
@@ -45,12 +44,12 @@ class ArmCore(m5_ArmO3CPU, AbstractCore):
     def connect_interrupt(self) -> None:
         self.createInterruptController()
 
-    def connect_icache(self, sequencer: Sequencer) -> None:
-        self.icache_port = sequencer.in_ports
+    def connect_icache(self, port) -> None:
+        self.icache_port = port  # sequencer.in_ports
 
-    def connect_dcache(self, sequencer: Sequencer) -> None:
-        self.dcache_port = sequencer.in_ports
+    def connect_dcache(self, port) -> None:
+        self.dcache_port = port  # sequencer.in_ports
 
     def connect_walker_ports(self, port1, port2) -> None:
-        self.mmu.dtb_walker.port = port1.in_ports
-        self.mmu.itb_walker.port = port2.in_ports
+        self.mmu.dtb_walker.port = port1
+        self.mmu.itb_walker.port = port2

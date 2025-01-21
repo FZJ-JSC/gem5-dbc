@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
 
 from g5dbc.sim.m5_objects import m5_AddrRange
+
 
 class AbstractMemCtrl:
     """
     Abstract Memory Controller
     """
+
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -22,7 +25,7 @@ class AbstractMemCtrl:
         """
 
     @abstractmethod
-    def connect_memory_port(self, ctrl) -> None:
+    def connect_memory_port(self, memory_out_port) -> None:
         """
         Connects to memory controller port
         """
