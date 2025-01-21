@@ -1,6 +1,6 @@
 model: Arm
 clock: 2.6GHz
-bp: BiMode
+bpred: BiMode
 FU:
   FP:
     count: 1

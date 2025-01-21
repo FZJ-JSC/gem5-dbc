@@ -8,7 +8,7 @@ class CPUConf:
     name: str
     model: str
     clock: str
-    bp: str | None = None
+    bpred: str | None = None
     core: CoreConfig | None = None
     FU: dict[str, CoreFUDesc] = field(default_factory=dict)
 

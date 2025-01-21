@@ -35,8 +35,8 @@ class ArmCore(m5_ArmO3CPU, AbstractCore):
         super().__init__(cpu_id=core_id, **cpu_conf.core.to_dict())
         self.fuPool = AbstractFUPool(cpu_conf.FU)
 
-    def set_branchPred(self, bp) -> None:
-        self.branchPred = bp
+    def set_branchPred(self, bpred) -> None:
+        self.branchPred = bpred
 
     def create_threads(self) -> None:
         self.createThreads()

@@ -4,15 +4,15 @@ from g5dbc.sim.m5_objects.cpu.bpred import m5_BiModeBP, m5_SimpleBTB, m5_Tournam
 
 class BPredFactory:
     @staticmethod
-    def create(bp_conf: BPredConf):
-        bp = None
-        btb = m5_SimpleBTB(**bp_conf.BTB.to_dict())
-        match bp_conf.model:
+    def create(conf: BPredConf):
+        bpred = None
+        btb = m5_SimpleBTB(**conf.BTB.to_dict())
+        match conf.model:
             case "BiMode":
-                bp = m5_BiModeBP(btb=btb, **bp_conf.params)
+                bpred = m5_BiModeBP(btb=btb, **conf.settings)
             case "Tournament":
-                bp = m5_TournamentBP(btb=btb, **bp_conf.params)
+                bpred = m5_TournamentBP(btb=btb, **conf.settings)
             case _:
-                raise ValueError(f"BP model {bp_conf.model} not available")
+                raise ValueError(f"BP model {conf.model} not available")
 
-        return bp
+        return bpred

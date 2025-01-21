@@ -1,22 +1,21 @@
 from g5dbc.config import Config
+from g5dbc.config.bpred import BPredConf
 from g5dbc.config.cpus import CPUConf
 from g5dbc.sim.model.cpu.AbstractProcessor import AbstractProcessor
 from g5dbc.sim.model.cpu.arm.ArmCore import ArmCore
 from g5dbc.sim.model.cpu.atomic.AtomicCore import AtomicCore
 
-from ..pred import BPFactory
+from .bpred import BPredFactory
 
 
 class CoreFactory:
     @staticmethod
-    def create(config: Config, cpu_conf: CPUConf, cpu_id: int = 0) -> AbstractProcessor:
+    def create(cpu_conf: CPUConf, config: Config, cpu_id: int = 0) -> AbstractProcessor:
         core: AbstractProcessor | None = None
         match cpu_conf.model:
             case "Arm":
                 core = ArmCore(cpu_conf, cpu_id)
-                if cpu_conf.bp is not None:
-                    bp_conf = config.branch_pred[cpu_conf.bp]
-                    core.set_branchPred(BPFactory.create(bp_conf))
+                core.set_branchPred(BPredFactory.create(config.bpred[cpu_conf.bpred]))
             case "AtomicSimple":
                 core = AtomicCore(cpu_id)
             case _:
@@ -32,7 +31,7 @@ class ProcessorFactory:
             (
                 key,
                 [
-                    CoreFactory.create(config, cpu_conf, cpu_id)
+                    CoreFactory.create(cpu_conf, config, cpu_id)
                     for cpu_id in range(num_cpus)
                 ],
             )
