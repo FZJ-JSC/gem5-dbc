@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gem5-dbc"
-version = "0.9.1"
+version = "0.10.1"
 authors = [
   { name="Carlos Falquez", email="c.falquez@fz-juelich.de" },
 ]
