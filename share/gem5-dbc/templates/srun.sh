@@ -1,8 +1,8 @@
 #!/bin/bash
 GEM5_BIN={gem5_bin}
 GEM5_SCR={gem5_script}
-WORK_DIR={gem5_output}
-FILE_OUT="output.log"
+WORK_DIR={gem5_workdir}
+FILE_OUT={gem5_output}
 
 if [ -f "$WORK_DIR/stats.txt" ]; then
   echo "$WORK_DIR/stats.txt already exists. Exiting."

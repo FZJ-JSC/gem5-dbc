@@ -56,12 +56,22 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
     config_file = output_dir.joinpath("config.yaml")
     config_file = write_config_file(config_file, config)
 
+    benchmark_cmd = benchmark.get_command(config)
+    benchmark_env = (
+        "\n".join(
+            [
+                'export {}="{}"'.format(k, v)
+                for k, v in benchmark.get_env(config).items()
+            ]
+        )
+        + "\n"
+    )
     # Write work script
     write_template(
         output_dir,
         opts.user_data_dir.joinpath("templates", config.simulation.work_script),
-        benchmark_env=benchmark.get_env(config),
-        benchmark_cmd=benchmark.get_command(config),
+        benchmark_env=benchmark_env,
+        benchmark_cmd=benchmark_cmd,
     )
 
     # Write srun script
@@ -70,7 +80,8 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
         opts.user_data_dir.joinpath("templates", config.simulation.srun_script),
         gem5_bin=config.search_artifact("GEM5").get("gem5.opt").path,
         gem5_script=configs_dir.parent.joinpath(config.simulation.gem5_script),
-        gem5_output=output_dir,
+        gem5_workdir=output_dir,
+        gem5_output="output.log",
     ).chmod(0o744)
 
     return 0

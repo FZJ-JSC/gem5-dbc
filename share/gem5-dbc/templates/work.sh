@@ -1,9 +1,9 @@
 #!/bin/sh 
 
+echo "START WORK"
+
 # Switch CPUS
 /sbin/m5 exit
-
-echo "START WORK"
 
 {benchmark_env}
 
