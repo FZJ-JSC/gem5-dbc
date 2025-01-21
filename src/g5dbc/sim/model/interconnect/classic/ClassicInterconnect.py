@@ -22,20 +22,29 @@ class ClassicInterconnect(CoherentInterconnect):
             if "SLC" not in config.caches
             else config.system.num_cpus * config.interconnect.classic.slcs_per_core
         )
+
         # L1I Caches
         self.l1i = [ClassicCache(config.caches["L1I"]) for _ in range(self._ncpus)]
+        for _cache in self.l1i:
+            _cache.set_prefetcher(config.prefetcher.get("L1I", None))
 
         # L1D Caches
         self.l1d = [ClassicCache(config.caches["L1D"]) for _ in range(self._ncpus)]
+        for _cache in self.l1d:
+            _cache.set_prefetcher(config.prefetcher.get("L1D", None))
 
         # L2 Caches
         self.l2cache = [ClassicCache(config.caches["L2"]) for _ in range(self._ncpus)]
+        for _cache in self.l2cache:
+            _cache.set_prefetcher(config.prefetcher.get("L2", None))
 
         # L3 Caches
         if self._num_slcs > 0:
             self.l3cache = [
                 ClassicCache(config.caches["SLC"]) for _ in range(self._num_slcs)
             ]
+            for _cache in self.l3cache:
+                _cache.set_prefetcher(config.prefetcher.get("SLC", None))
 
         # ITLB Page walk caches
         self.iwc = [ClassicCache(config.caches["IWC"]) for _ in range(self._ncpus)]

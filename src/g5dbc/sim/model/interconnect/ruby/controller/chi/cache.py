@@ -1,6 +1,6 @@
-import math
-
 from g5dbc.config.caches import CacheConf
+from g5dbc.config.prefetcher import PrefetcherConf
+from g5dbc.sim.factory.prefetcher import PrefetcherFactory
 from g5dbc.sim.m5_objects import m5_AddrRange, m5_NULL
 from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubyCache, m5_RubySystem
 from g5dbc.sim.m5_objects.ruby.chi import m5_Cache_Controller
@@ -47,6 +47,11 @@ class CacheController(m5_Cache_Controller, AbstractController):
         self.prefetcher = m5_NULL
         # Default No sequencer
         self.sequencer = m5_NULL
+
+    def set_prefetcher(self, config: PrefetcherConf | None):
+        if config is not None:
+            self.use_prefetcher = True
+            self.prefetcher = PrefetcherFactory.create(config)
 
     def connect_network(self, network) -> None:
         """

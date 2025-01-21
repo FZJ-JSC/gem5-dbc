@@ -33,17 +33,22 @@ class RNF(AbstractNode):
         Create RNF controller
         """
 
-        max_outstanding_l1i_req = config.caches[
-            "L1I"
-        ].sequencer.max_outstanding_requests
-        max_outstanding_l1d_req = config.caches[
-            "L1D"
-        ].sequencer.max_outstanding_requests
+        max_l1i_req = config.caches["L1I"].sequencer.max_outstanding_requests
+        max_l1d_req = config.caches["L1D"].sequencer.max_outstanding_requests
 
         self.dcache = CacheController(
             config=config.caches["L1D"],
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
+        )
+        self.dcache.set_prefetcher(config.prefetcher.get("L1D", None))
+        self.dcache.connect_sequencer(
+            Sequencer(
+                ruby_system=ruby_system,
+                # disable_sanity_check=True,
+                max_outstanding_requests=max_l1d_req,
+            ),
+            dcache=True,
         )
 
         self.icache = CacheController(
@@ -51,21 +56,12 @@ class RNF(AbstractNode):
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
         )
-
-        self.dcache.connect_sequencer(
-            Sequencer(
-                ruby_system=ruby_system,
-                # disable_sanity_check=True,
-                max_outstanding_requests=max_outstanding_l1d_req,
-            ),
-            dcache=True,
-        )
-
+        self.icache.set_prefetcher(config.prefetcher.get("L1I", None))
         self.icache.connect_sequencer(
             Sequencer(
                 ruby_system=ruby_system,
                 # disable_sanity_check=True,
-                max_outstanding_requests=max_outstanding_l1i_req,
+                max_outstanding_requests=max_l1i_req,
             )
         )
 
@@ -83,6 +79,7 @@ class RNF(AbstractNode):
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
         )
+        self.l2cache.set_prefetcher(config.prefetcher.get("L2", None))
 
         for c in self._ll_ctrls:
             c.set_downstream([self.l2cache])

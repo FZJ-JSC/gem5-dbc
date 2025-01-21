@@ -24,6 +24,7 @@ class HNF(AbstractNode):
             # data_channel_size=config.network.data_width,
             # transitions_per_cycle=transitions_per_cycle
         )
+        self.ctrl.set_prefetcher(config.prefetcher.get("SLC", None))
 
     def get_controllers(self) -> list[AbstractController]:
         return [self.ctrl]
