@@ -1,6 +1,19 @@
-*.pyc
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Vim files:
 *~
 .*.swp
 
+# Packaging
+dist/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Spyder project settings
+.spyderproject
 .spyproject
 
