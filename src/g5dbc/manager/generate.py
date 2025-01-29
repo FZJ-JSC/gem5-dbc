@@ -45,7 +45,7 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
     config = benchmark.get_config(config, config.parameters)
 
     # Check if config is valid
-    if check_config(config) is not True:
+    if not check_config(config):
         return -1
 
     # Create output directory
@@ -78,7 +78,9 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
     write_template(
         output_dir,
         opts.user_data_dir.joinpath("templates", config.simulation.srun_script),
-        gem5_bin=config.search_artifact("GEM5").get("gem5.opt").path,
+        gem5_bin=config.search_artifact("GEM5", version=config.simulation.gem5_version)
+        .get("gem5.opt")
+        .path,
         gem5_script=configs_dir.parent.joinpath(config.simulation.gem5_script),
         gem5_workdir=output_dir,
         gem5_output="output.log",

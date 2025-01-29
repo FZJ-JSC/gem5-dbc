@@ -21,7 +21,7 @@ def configure_gem5_binary(path: Path) -> tuple[str, list[dict[str, str]]]:
 
     r_meta = r"compiled (.+)"
     r_arch = r"USE_(\w+)_ISA = True"
-    r_ver = r"gem5 version ([0-9\.]+)"
+    r_ver = r"gem5 version ([\w\.-]+)"
     for l in outl:
         if m := re.fullmatch(r_meta, l.strip()):
             gem5_meta = m[1]
@@ -55,21 +55,28 @@ def configure_gem5_binary(path: Path) -> tuple[str, list[dict[str, str]]]:
     return gem5_arch, config
 
 
-def update_user_config_file(config_file: Path, config: dict) -> Path:
-    # We overwrite for now
-    yaml_dict.write(config_file, config)
-    return config_file
-
-
 def update_user_config(opts: Options):
     # Create user conf directory if it does not already exist
     opts.user_conf_dir.mkdir(parents=True, exist_ok=True)
     config_file = opts.user_conf_dir.joinpath("artifacts.yaml")
+    config: dict[str, list[dict[str, str]]] = dict()
 
     match opts.configure[0]:
         case "GEM5":
             arch, items = configure_gem5_binary(Path(opts.configure[1]))
-            config = dict([(arch, items)])
-            update_user_config_file(config_file, config)
+            arch_objs = config.setdefault(arch, [])
+            arch_objs.extend(items)
         case _:
             pass
+
+    if config_file.exists():
+        prev_config: dict[str, list[dict[str, str]]] = yaml_dict.load(config_file)
+        for arch, items in prev_config.items():
+            if arch in config:
+                _cksum = [o["md5hash"] for o in config[arch]]
+                _items = [item for item in items if item["md5hash"] not in _cksum]
+                config[arch].extend(_items)
+            else:
+                config[arch] = items
+    if config:
+        yaml_dict.write(config_file, config)

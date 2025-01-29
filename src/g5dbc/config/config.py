@@ -63,7 +63,14 @@ class Config:
 
         return config
 
-    def search_artifact(self, typename: str) -> dict[str, BinaryArtifact]:
+    def search_artifact(
+        self, typename: str, version: str = ""
+    ) -> dict[str, BinaryArtifact]:
         arch_name = self.system.architecture
         artifacts = self.artifacts[arch_name]
-        return dict([(a.name, a) for a in artifacts if a.bintype == typename])
+
+        _select = lambda x: x.bintype == typename and (
+            x.version == version or version == ""
+        )
+
+        return dict([(a.name, a) for a in artifacts if _select(a)])
