@@ -71,7 +71,7 @@ class Garnet_Network(m5_GarnetNetwork, AbstractNetwork):
         link_latency = config.network.mesh_link_latency
         router_latency = config.network.router_latency
 
-        router = self.create_router(latency=router_latency)
+        router = self.create_router(latency=router_latency, router_class=1)
 
         src_id = router.get_router_id()
         dst_id = mesh_router_id

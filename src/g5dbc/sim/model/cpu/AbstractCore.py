@@ -19,8 +19,11 @@ class AbstractCore:
         self.clk_domain = clock
 
     def set_numa_id(self, numa_id: int) -> int:
-        # self.numa_id = numa_id
-        return numa_id  # self.numa_id.value
+        _id = 0
+        if hasattr(self, "numa_id"):
+            self.numa_id = numa_id
+            _id = self.numa_id.value
+        return _id
 
     def get_core_id(self) -> int:
         return self.cpu_id.value

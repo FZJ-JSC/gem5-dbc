@@ -5,8 +5,11 @@ from ...network.NetworkRouter import NetworkRouter
 
 class Garnet_Router(m5_GarnetRouter, NetworkRouter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, router_id: int, **kwargs):
+        super().__init__(
+            **{k: v for k, v in kwargs.items() if hasattr(m5_GarnetRouter, k)}
+        )
+        self.router_id = router_id
 
     def get_router_id(self) -> int:
         return self.router_id.value

@@ -148,9 +148,10 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
             raise ValueError(f"Disk image list empty")
 
         # Assume first disk in list to be root disk
+        kernel_metadata = kernels["vmlinux"].metadata
         self.workload = m5_ArmFsLinux(
             output_dir=str(output_dir),
-            command_line=f"{kernels["vmlinux"].metadata} root={root_partition[0]}",
+            command_line=f"{kernel_metadata} root={root_partition[0]}",
             kernel_path=str(kernels["vmlinux"].path),
         )
 
@@ -161,7 +162,8 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
     def set_mem_range_numa_ids(self, ids: list[int]) -> None:
         """ """
-        # self.mem_range_numa_ids = ids
+        if hasattr(self, "mem_range_numa_ids"):
+            self.mem_range_numa_ids = ids
 
     def create_memory_ranges(
         self, regions: list[MemoryRegionConfig]

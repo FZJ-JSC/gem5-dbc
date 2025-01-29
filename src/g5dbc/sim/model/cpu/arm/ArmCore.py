@@ -1,6 +1,11 @@
-from g5dbc.config import Config
 from g5dbc.config.cpus import CoreFUDesc, CPUConf
-from g5dbc.sim.m5_objects.cpu import m5_ArmO3CPU, m5_FUDesc, m5_FUPool, m5_OpDesc
+from g5dbc.sim.m5_objects.cpu import (
+    m5_ArmO3CPU,
+    m5_FUDesc,
+    m5_FUPool,
+    m5_OpClass,
+    m5_OpDesc,
+)
 
 from ..AbstractCore import AbstractCore
 
@@ -8,21 +13,29 @@ from ..AbstractCore import AbstractCore
 class AbstractFUPool(m5_FUPool):
     def __init__(self, FU: dict[str, CoreFUDesc]):
         FUList: list[m5_FUDesc] = []
-        for name, fu in FU.items():
-            _cls = type(
-                name,
-                (m5_FUDesc,),
-                dict(
+        for label, fu in FU.items():
+            # Test for supported operations
+            if m5_OpClass.is_supported([op.name for op in fu.ops]):
+                _atr = dict(
                     count=fu.count,
                     opList=[
                         m5_OpDesc(
-                            opClass=op.name, opLat=op.latency, pipelined=op.pipelined
+                            opClass=op.name,
+                            opLat=op.latency,
+                            pipelined=op.pipelined,
                         )
                         for op in fu.ops
                     ],
-                ),
-            )
-            FUList.append(_cls())
+                )
+                # Test for label attribute
+                if hasattr(m5_FUDesc, "label"):
+                    _atr["label"] = label
+                _cls = type(
+                    label,
+                    (m5_FUDesc,),
+                    {k: v for k, v in _atr.items()},
+                )
+                FUList.append(_cls())
         super().__init__(FUList=FUList)
 
 
@@ -32,7 +45,11 @@ class ArmCore(m5_ArmO3CPU, AbstractCore):
         if cpu_conf.core is None:
             raise ValueError("Core config unavailable")
 
-        super().__init__(cpu_id=core_id, **cpu_conf.core.to_dict())
+        core_conf = {
+            k: v for k, v in cpu_conf.core.to_dict().items() if hasattr(m5_ArmO3CPU, k)
+        }
+
+        super().__init__(cpu_id=core_id, **core_conf)
         self.fuPool = AbstractFUPool(cpu_conf.FU)
 
     def set_branchPred(self, bpred) -> None:
