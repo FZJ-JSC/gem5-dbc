@@ -19,4 +19,13 @@ def check_config(config: Config) -> bool:
             conf.controller.data_channel_size = config.network.data_width
         conf.block_size_bits = int(math.log(config.system.cache_line_size, 2))
 
+    if config.system.architecture == "arm64":
+        match config.system.interconnect:
+            case "classic":
+                config.system.platform = "VExpress_GEM5_V1"
+            case "simple":
+                config.system.platform = "VExpress_GEM5_V2"
+            case "garnet":
+                config.system.platform = "VExpress_GEM5_V2"
+
     return True
