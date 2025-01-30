@@ -30,12 +30,28 @@ g5dbc --configure GEM5 gem5/build/ARM/gem5.opt
 
 ## Simulation Workflow
 
+Once installed, the command `g5dbc` can be used to generate scripts for starting gem5 simulations
+with the correct model paramters, and parse the resulting `stats.txt` file.
+
+
+### Benchmark definition
+
+To use gem5-dbc, a benchmark must be defined by
+    1. listing a set of initial model parameters, the *initial configuration*,
+    2. implementing a subclass of [AbstractBenchmark](src/g5dbc/benchmark/benchmark.py) and its methods.
+
+The default location for initial configurations is `share/gem5-dbc/configs`.
+The default location for AbstractBenchmark implementations is `share/gem5-dbc/benchmarks`.
+
 ### Benchmark simulation scripts generation
+
+Once the initial configuration and AbstractBenchmark implementation is defined,
+`g5dbc` may be invoked to generate simulations scripts.
 
 ```bash
 # Generate simulation scripts for stream benchmark and example architecture configuration
 # Include $ARTIFACTS directory containing artifacts.yaml index
-g5dbc --generate stream simple-2CPUs-SimpleMem --artifacts-dir $ARTIFACTS
+g5dbc --generate stream example-2CPUs-garnet-Simple --artifacts-dir $ARTIFACTS
 ```
 
 ### Benchmark results evaluation

@@ -53,5 +53,5 @@ will contain the generated binary artifacts.
 The directory `$G5DBC_IMAGES` can be referenced when generating simulation scripts with `g5dbc`,
 ```bash
 # Generate simulation scripts, include artifacts in $G5DBC_IMAGES
-g5dbc --generate stream system-single --artifact-dir $G5DBC_IMAGES
+g5dbc --generate stream system-single --artifacts-dir $G5DBC_IMAGES
 ```
