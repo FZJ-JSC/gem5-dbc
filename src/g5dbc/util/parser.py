@@ -1,29 +1,50 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
-def parse_number_text(txt: str|None, default='') -> int|float|str:
-    if txt is None:
+
+def parse_number(x) -> int | float | None:
+    try:
+        return int(x, 0)
+    except:
+        pass
+    try:
+        return float(x)
+    except:
+        pass
+    return None
+
+
+def parse_number_text(x: str | None, default="") -> int | float | str:
+    if x is None:
         return default
-    if txt is not None:
+    if x is not None:
         try:
-            return int(txt)
-        except ValueError:
+            return int(x, 0)
+        except:
             pass
         try:
-            return float(txt)
-        except ValueError:
+            return float(x)
+        except:
             pass
-    return str(txt)
+    return str(x)
+
 
 def parse_gem5_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+)")
-    h  = [(n,v) for n,v in enumerate([parse_number_text(n) for n in re.findall(r,line)])]
+    h = [
+        (n, v)
+        for n, v in enumerate([parse_number_text(n) for n in re.findall(r, line)])
+    ]
     return h
+
 
 def parse_gem5_sparse_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+),([+-.\d]+)")
-    h  = [(parse_number_text(n[0]),parse_number_text(n[1])) for n in re.findall(r,line)]
+    h = [
+        (parse_number_text(n[0]), parse_number_text(n[1])) for n in re.findall(r, line)
+    ]
     return h
+
 
 def parse_gem5_key(key: str):
     """_summary_
@@ -43,7 +64,8 @@ def parse_gem5_key(key: str):
     s = l2.split("::")
     p = s[0].split(".")
     k = None if len(s) == 1 else s[1]
-    return (p,k)
+    return (p, k)
+
 
 def normalize_gem5_stats_line(line: str):
     s = line.split()
@@ -60,14 +82,15 @@ def normalize_gem5_stats_line(line: str):
             v = list(parse_gem5_sparse_histogram(line))
         else:
             v = parse_number_text(s[1])
-    # Catch buggy stats.txt    
+    # Catch buggy stats.txt
     v = 0 if v == "#" or v == "(Unspecified)" else v
-    return p,k,v
+    return p, k, v
+
 
 def stats_line_generator(stats_file: Path, max_roi_id=5):
     with open(stats_file) as f:
-        roi_id=0
-        is_roi=False
+        roi_id = 0
+        is_roi = False
         for line in f:
             if line and line.strip():
                 if roi_id >= max_roi_id:
@@ -77,6 +100,6 @@ def stats_line_generator(stats_file: Path, max_roi_id=5):
                     roi_id = roi_id + 1 if is_roi else roi_id
                     is_roi = not is_roi
                     continue
-                #r = d.setdefault(roi_id, init_config_parameters(config, roi_id))
+                # r = d.setdefault(roi_id, init_config_parameters(config, roi_id))
                 path, key, val = normalize_gem5_stats_line(line)
                 yield (roi_id, path, key, val)

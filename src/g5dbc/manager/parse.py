@@ -13,9 +13,11 @@ from .options import Options
 def parse_subdir(args: tuple[Path, Path, AbstractBenchmark, StatsParser]) -> dict:
     stats_dir, output_dir, benchmark, parser = args
 
-    name = stats_dir.name
+    bench_name = benchmark.get_name()
 
-    output_file = output_dir.joinpath(f"{name}")
+    bench_id = stats_dir.name
+
+    output_file = output_dir.joinpath(f"{bench_id}")
 
     config_file = stats_dir.joinpath(f"config.yaml")
     outlog_file = stats_dir.joinpath(f"output.log")
@@ -29,12 +31,16 @@ def parse_subdir(args: tuple[Path, Path, AbstractBenchmark, StatsParser]) -> dic
         stdout_log=benchmark.parse_stdout_log(stdout_file),
     )
 
-    stats_params = dict(bench_id=name, **benchmark.parse_config(config))
+    stats_params = dict(
+        bench_name=bench_name,
+        bench_id=bench_id,
+        **benchmark.parse_config(config),
+    )
     if output_file.with_suffix(".0.json").exists():
-        print(f"parse_subdir: Skipped parsing {name} to {output_file}")
+        print(f"parse_subdir: Skipped parsing {bench_id} to {output_file}")
         return stats_params
 
-    print(f"parse_subdir: Parsing {name} to {output_file}")
+    print(f"parse_subdir: Parsing {bench_id} to {output_file}")
 
     parsed_rois = parser.parse_stats(stats_params, parsed_output, stats_file)
 

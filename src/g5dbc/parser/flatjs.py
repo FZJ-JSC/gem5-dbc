@@ -1,27 +1,62 @@
+from ..util.parser import parse_number_text
 from .parser import StatsParser
 
 
 class FlatJS(StatsParser):
 
     def update_column(self, r: dict, c: str, key, val) -> dict:
-        if key is None:
-            try:
+        scalar_keys = [
+            "total",
+            "samples",
+            "sum",
+            "window",
+            "average",
+            "variance",
+        ]
+        map_keys = [
+            "values",
+            "list",
+        ]
+        vec_keys = [
+            "correlator",
+            "array",
+            "averages",
+            "variances",
+            "counts",
+            "bin_samples",
+        ]
+        list_keys = ["selected"]
+
+        try:
+            if key is None:
                 r[c] = val + r.get(c, 0)
-            except Exception as e:
-                print(f"Warning: col={c} err={e}")
-        elif key == "total" or key == "samples":
-            c = f"{c}_total"
-            r[c] = val + r.get(c, 0)
-        elif key == "sum":
-            c = f"{c}_sum"
-            r[c] = val + r.get(c, 0)
-        elif key == "values" or key == "list":
-            for k, v in val:
+            elif key in scalar_keys:
+                c = f"{c}_{key}"
+                r[c] = val + r.get(c, 0)
+            elif key in map_keys:
+                c = f"{c}_{key}"
+                if isinstance(val, list):
+                    for k, v in val:
+                        d = r.setdefault(c, dict())
+                        d[k] = v + d.get(k, 0)
+            elif key in vec_keys:
+                c = f"{c}_{key}"
+                l = val.split(",")
+                n = len(l) - 1
+                b = r.setdefault(c, [0] * n)
+                n = min(n, len(b))
+                for i in range(n):
+                    b[i] = parse_number_text(l[i])
+            elif key in list_keys:
+                c = f"{c}_{key}"
+                r[c] = val
+            else:
+                c = f"{c}_{key}"
                 d = r.setdefault(c, dict())
-                d[k] = v + d.get(k, 0)
-        else:
-            d = r.setdefault(c, dict())
-            d[key] = val + d.get(key, 0)
+                d[key] = val + d.get(key, 0)
+
+        except Exception as e:
+            print(f"Parser Error {e=} at {c=} {key=}")
 
         return r
 
