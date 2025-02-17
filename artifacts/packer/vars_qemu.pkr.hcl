@@ -48,11 +48,11 @@ locals {
     "arm64"   = "${var.qemu_cpu_arm64}"
     "x86_64"  = "${var.qemu_cpu_x86_64}"
   }
-  qemu_arch      = lookup(local.qemu_archs,    var.build_arch, "aarch64")
-  qemu_machine   = lookup(local.qemu_machines, var.build_arch, "virt")
-  qemu_cpu_model = lookup(local.qemu_cpus,     var.build_arch, "max")
+  qemu_arch      = lookup(local.qemu_archs,    var.image_arch, "aarch64")
+  qemu_machine   = lookup(local.qemu_machines, var.image_arch, "virt")
+  qemu_cpu_model = lookup(local.qemu_cpus,     var.image_arch, "max")
   qemu_binary    = "qemu-system-${local.qemu_arch}"
-  qemu_args      = var.build_arch == "arm64" ?  [
+  qemu_args      = var.image_arch == "arm64" ?  [
     ["-device", "virtio-gpu-pci"],
     ["-device", "qemu-xhci"],
     ["-device", "usb-kbd"],

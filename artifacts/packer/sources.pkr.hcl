@@ -9,44 +9,32 @@ packer {
   }
 }
 
-source "qemu" "debian" {
-  vm_name          = "debian.img"
-  output_directory = "${var.images_dir}/${var.build_dir}/${var.build_arch}/disks"
+source "qemu" "linux_image" {
+  vm_name = "disk.img-${var.distro_name}-${local.distro_ver}"
+  format  = "raw"
 
+  output_directory = "${local.output_dir}/${var.artifacts_dir}/${var.image_arch}/disks"
+
+  disk_size    = var.image_size
   machine_type = local.qemu_machine
   cpu_model    = local.qemu_cpu_model
   cpus         = var.qemu_ncpus
   memory       = var.qemu_memory
-  disk_size    = var.image_size
   headless     = var.qemu_headless
   accelerator  = var.qemu_accelerator
-  format       = "raw"
+  qemu_binary  = local.qemu_binary
+  qemuargs     = local.qemu_args
 
-  boot_command  = [
-        "<wait>c<wait>",
-        "linux /${local.debian_boot}/vmlinuz",
-        " auto=true",
-        " url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-${var.debian_version}.cfg",
-        " hostname=${var.image_hostname}",
-        " domain=local",
-        " --- quiet",
-        "<enter><wait>",
-        "initrd /${local.debian_boot}/initrd.gz",
-        "<enter><wait>",
-        "boot<enter><wait>"
-      ]
-  http_directory    = "${path.root}/config/debian"
+  http_directory    = "${path.root}/provision/${var.distro_name}"
   boot_key_interval = "20ms"
   boot_wait         = "10s"
 
-  iso_url      = local.debian_iso
-  iso_checksum = local.debian_sum
-
-  qemu_binary = local.qemu_binary
-  qemuargs    = local.qemu_args
+  boot_command = local.distro_boot_command
+  iso_url      = local.distro_iso
+  iso_checksum = local.distro_sum
 
   ssh_username = "root"
   ssh_password = "root"
-  ssh_timeout  = "150m"
+  ssh_timeout  = "240m"
   shutdown_command = "/sbin/poweroff"  
 }

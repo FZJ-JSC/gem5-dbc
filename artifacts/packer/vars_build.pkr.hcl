@@ -1,17 +1,18 @@
 # Build variables
 
-variable "images_dir" {
+variable "output_dir" {
   type    = string
+  default = ""
 }
 
-variable "build_arch" {
-  type    = string
-  default = "arm64"
-}
-
-variable "build_dir" {
+variable "artifacts_dir" {
   type    = string
   default = "artifacts"
+}
+
+variable "image_arch" {
+  type    = string
+  default = "arm64"
 }
 
 variable "image_hostname" {
@@ -21,5 +22,25 @@ variable "image_hostname" {
 
 variable "image_size" {
   type    = number
-  default = 6500
+  default = 10000
+}
+
+variable "packages" {
+  type    = list(string)
+  default = [
+    "gem5",
+    "mini_stream",
+    "linux"   
+  ]
+}
+
+locals {
+  output_dir = coalesce("${var.output_dir}", "${path.cwd}")
+  package_list = join(" ", var.packages)  
+  package_source_dir="/root/sources"
+  package_build_dir="/root/build"
+  binaries_output="/root/binaries"
+  ssh_keys_output="/root/keys"
+  provision_dir="/tmp/provision"
+  package_install_dir="/benchmarks"
 }
