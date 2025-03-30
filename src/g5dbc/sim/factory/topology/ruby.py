@@ -6,8 +6,8 @@ class RubyTopologyFactory:
 
     @staticmethod
     def create(config: Config) -> RubyTopology:
-        match config.network.topology[config.system.topology].model:
+        match config.network.topology.model:
             case "Simple2D":
                 return Simple2D(config)
             case _:
-                raise ValueError(f"Unknown Topology {config.system.topology}")
+                raise ValueError(f"Unknown Topology {config.network.topology.model}")

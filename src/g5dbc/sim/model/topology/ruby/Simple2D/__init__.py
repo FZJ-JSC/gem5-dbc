@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from g5dbc.config import Config
 
@@ -9,20 +9,28 @@ from ..RubyTopology import RubyTopology
 @dataclass
 class Options:
     num_mesh_routers: int
-    router_numa_ids: list[int]
     cpu_routers: list[list[int]]
     slc_routers: list[list[int]]
     mem_routers: list[list[int]]
-    rom_routers: list[int]
-    dma_routers: list[int]
     internal_links: list[list[int]]
+    rom_routers: list[int] = field(default_factory=list)
+    dma_routers: list[int] = field(default_factory=list)
+    router_numa_ids: list[int] = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.router_numa_ids:
+            self.router_numa_ids = [0 for _ in range(self.num_mesh_routers)]
+        if not self.rom_routers:
+            self.rom_routers = [self.num_mesh_routers - 1]
+        if not self.dma_routers:
+            self.dma_routers = [self.num_mesh_routers - 1]
 
 
 class Simple2D(RubyTopology):
 
     def __init__(self, config: Config):
-        assert config.network.topology[config.system.topology].model == "Simple2D"
-        params = config.network.topology[config.system.topology].parameters
+        assert config.network.topology.model == "Simple2D"
+        params = config.network.topology.parameters
 
         self.config_topo = Options(**params)
 

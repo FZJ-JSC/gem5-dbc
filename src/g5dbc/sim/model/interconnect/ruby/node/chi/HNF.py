@@ -1,9 +1,10 @@
 from g5dbc.config import Config
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
 from g5dbc.sim.model.interconnect.ruby.controller import AbstractController
 from g5dbc.sim.model.interconnect.ruby.controller.chi import CacheController
 from g5dbc.sim.model.topology import NodeSpec
 
+from ...Sequencer import Sequencer
 from ..AbstractNode import AbstractNode
 
 
@@ -24,7 +25,6 @@ class HNF(AbstractNode):
             # data_channel_size=config.network.data_width,
             # transitions_per_cycle=transitions_per_cycle
         )
-        self.ctrl.set_prefetcher(config.prefetcher.get("SLC", None))
 
     def get_controllers(self) -> list[AbstractController]:
         return [self.ctrl]

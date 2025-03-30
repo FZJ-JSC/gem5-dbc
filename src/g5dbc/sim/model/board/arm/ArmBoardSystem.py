@@ -55,7 +55,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         config = self._config
 
         self._pci_devices = []
-        self._dma_ports = [] if not config.system.is_classic() else None
+        self._dma_ports = None if config.interconnect.is_classic() else []
         self._mem_ports = []
 
         # Configure IO Bus
@@ -63,7 +63,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         self.iobus.badaddr_responder = m5_BadAddr()
         self.iobus.default = self.iobus.badaddr_responder.pio
 
-        if config.system.is_classic():
+        if config.interconnect.is_classic():
             # Configure MemBus and IO Bridge
             self.membus = m5_SystemXBar(width=64)
 
@@ -80,7 +80,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         return self.iobus
 
     def get_MEM_bus(self) -> m5_SystemXBar | None:
-        if self._config.system.is_classic():
+        if self._config.interconnect.is_classic():
             return self.membus
         else:
             return None
@@ -92,7 +92,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         return self._dma_ports
 
     def attach_chip_IO(self):
-        if self._config.system.is_classic():
+        if self._config.interconnect.is_classic():
             self.realview.attachOnChipIO(bus=self.membus, bridge=self.iobridge)
         else:
             # self.realview.attachOnChipIO does the following:
@@ -130,33 +130,36 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         config = self._config
 
         output_dir = Path(config.simulation.output_dir)
-        kernels = config.search_artifact("KERNEL")
-        bootloaders = config.search_artifact("BOOT")
+        kernel = config.get_artifact(
+            "KERNEL",
+            name=config.simulation.linux_binary,
+            version=config.simulation.linux_version,
+        )
+        bootloader = config.get_artifact(
+            "BOOT",
+            name=config.simulation.bootloader_binary,
+            version=self.realview.get_version(),
+        )
         disk_images = config.search_artifact("DISK")
-        bootloader_path = [
-            v.path
-            for k, v in bootloaders.items()
-            if v.metadata == config.system.platform
-        ]
         root_partition = [v.metadata for k, v in disk_images.items()]
 
-        if not kernels:
-            raise ValueError(f"Kernel list empty")
-        if not bootloader_path:
+        if kernel is None:
+            raise ValueError(f"Linux Kernel not found.")
+        if bootloader is None:
             raise ValueError(f"Bootloader list empty")
         if not root_partition:
             raise ValueError(f"Disk image list empty")
 
         # Assume first disk in list to be root disk
-        kernel_metadata = kernels["vmlinux"].metadata
+        kernel_metadata = kernel.metadata
         self.workload = m5_ArmFsLinux(
             output_dir=str(output_dir),
             command_line=f"{kernel_metadata} root={root_partition[0]}",
-            kernel_path=str(kernels["vmlinux"].path),
+            kernel_path=str(kernel.path),
         )
 
         # Use first bootloader in list
-        self.realview.setupBootLoader(self, lambda name: str(bootloader_path[0]))
+        self.realview.setupBootLoader(self, lambda name: str(bootloader.path))
 
         self.readfile = str(output_dir.joinpath(config.simulation.work_script))
 
@@ -188,7 +191,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         # Set Memory access mode
         mem_mode = processor.get_active_mem_mode()
         # Ruby only supports atomic accesses in noncaching mode
-        if f"{mem_mode}" == "atomic" and not config.system.is_classic():
+        if f"{mem_mode}" == "atomic" and not config.interconnect.is_classic():
             mem_mode = "atomic_noncaching"
 
         self.mem_mode = mem_mode

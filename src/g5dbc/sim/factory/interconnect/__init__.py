@@ -9,14 +9,14 @@ class InterconnectFactory:
     def create(config: Config) -> CoherentInterconnect:
         ic: CoherentInterconnect | None = None
 
-        match config.system.interconnect:
+        match config.interconnect.model:
             case "garnet" | "simple":
                 ic = RubyInterconnect(config)
             case "classic":
                 ic = ClassicInterconnect(config)
             case _:
                 raise ValueError(
-                    f"Interconnect model {config.system.interconnect} not available"
+                    f"Interconnect model {config.interconnect.model} not available"
                 )
 
         return ic

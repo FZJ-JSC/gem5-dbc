@@ -14,12 +14,21 @@ class ArmPlatform:
         if hasattr(self.gic, "cpu_addr"):
             board.gic_cpu_addr = self.gic.cpu_addr
 
+    def get_version(self) -> str:
+        return ""
+
 
 class ArmVExpressV1(m5_VExpress_GEM5_V1, ArmPlatform):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    def get_version(self) -> str:
+        return "V1"
+
 
 class ArmVExpressV2(m5_VExpress_GEM5_V2, ArmPlatform):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def get_version(self) -> str:
+        return "V2"

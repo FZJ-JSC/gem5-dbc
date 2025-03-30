@@ -1,9 +1,10 @@
 from g5dbc.config import Config
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
 from g5dbc.sim.model.interconnect.ruby.controller import AbstractController
 from g5dbc.sim.model.interconnect.ruby.controller.chi import MemController
 from g5dbc.sim.model.topology import NodeSpec
 
+from ...Sequencer import Sequencer
 from ..AbstractNode import AbstractNode
 
 

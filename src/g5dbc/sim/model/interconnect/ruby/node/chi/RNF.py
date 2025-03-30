@@ -1,9 +1,10 @@
 from g5dbc.config import Config
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
 from g5dbc.sim.model.interconnect.ruby.controller import AbstractController
 from g5dbc.sim.model.interconnect.ruby.controller.chi import CacheController
 from g5dbc.sim.model.topology import NodeSpec
 
+from ...Sequencer import Sequencer
 from ..AbstractNode import AbstractNode
 
 
@@ -41,7 +42,7 @@ class RNF(AbstractNode):
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
         )
-        self.dcache.set_prefetcher(config.prefetcher.get("L1D", None))
+        self.dcache.set_prefetcher(config.caches["L1D"].prefetcher)
         self.dcache.connect_sequencer(
             Sequencer(
                 ruby_system=ruby_system,
@@ -56,7 +57,7 @@ class RNF(AbstractNode):
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
         )
-        self.icache.set_prefetcher(config.prefetcher.get("L1I", None))
+        self.icache.set_prefetcher(config.caches["L1I"].prefetcher)
         self.icache.connect_sequencer(
             Sequencer(
                 ruby_system=ruby_system,
@@ -79,7 +80,7 @@ class RNF(AbstractNode):
             ruby_system=ruby_system,
             # data_channel_size = config.network.data_width
         )
-        self.l2cache.set_prefetcher(config.prefetcher.get("L2", None))
+        self.l2cache.set_prefetcher(config.caches["L2"].prefetcher)
 
         for c in self._ll_ctrls:
             c.set_downstream([self.l2cache])

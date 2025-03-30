@@ -1,7 +1,6 @@
 from abc import ABC, ABCMeta, abstractmethod
 
 from g5dbc.sim.m5_objects import m5_ClockDomain
-from g5dbc.sim.m5_objects.ruby import Sequencer
 
 
 class AbstractCore:
@@ -44,15 +43,15 @@ class AbstractCore:
         """
 
     @abstractmethod
-    def connect_icache(self, sequencer: Sequencer) -> None:
+    def connect_icache(self, port) -> None:
         """
-        Connect icache sequencer
+        Connect icache port
         """
 
     @abstractmethod
-    def connect_dcache(self, sequencer: Sequencer) -> None:
+    def connect_dcache(self, port) -> None:
         """
-        Connect dcache sequencer
+        Connect dcache port
         """
 
     @abstractmethod

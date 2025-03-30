@@ -2,14 +2,15 @@ import math
 
 from g5dbc.config.memory.controller import MemCtrlConfig
 from g5dbc.sim.m5_objects import m5_AddrRange
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
-from g5dbc.sim.m5_objects.ruby.chi import m5_Memory_Controller
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
+from g5dbc.sim.m5_objects.ruby.chi import m5_CHI_Memory_Controller
 from g5dbc.sim.m5_objects.ruby.message import TriggerMessageBuffer, m5_MessageBuffer
 
+from ...Sequencer import Sequencer
 from ..AbstractController import AbstractController
 
 
-class MemController(m5_Memory_Controller, AbstractController):
+class MemController(m5_CHI_Memory_Controller, AbstractController):
     """
     CHI Memory Controller
     """

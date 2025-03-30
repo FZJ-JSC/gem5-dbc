@@ -90,9 +90,6 @@ class RubyInterconnect(CoherentInterconnect):
             # Get dcache and icache sequencers
             dcache_seq, icache_seq = node.get_sequencers()
 
-            dcache_id = dcache_seq.get_version()
-            icache_id = icache_seq.get_version()
-
             core.set_numa_id(numa_id)
             core.connect_dcache(dcache_seq.in_ports)
             core.connect_icache(icache_seq.in_ports)

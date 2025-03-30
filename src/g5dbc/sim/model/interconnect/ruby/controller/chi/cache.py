@@ -1,20 +1,21 @@
-from g5dbc.config.caches import CacheConf
-from g5dbc.config.prefetcher import PrefetcherConf
+from g5dbc.config.caches import CacheConf, PrefetcherConf
 from g5dbc.sim.factory.prefetcher import PrefetcherFactory
 from g5dbc.sim.m5_objects import m5_AddrRange, m5_NULL
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubyCache, m5_RubySystem
-from g5dbc.sim.m5_objects.ruby.chi import m5_Cache_Controller
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
+from g5dbc.sim.m5_objects.ruby.chi import m5_CHI_Cache_Controller
 from g5dbc.sim.m5_objects.ruby.message import (
     MandatoryMessageBuffer,
     OrderedTriggerMessageBuffer,
     TriggerMessageBuffer,
     m5_MessageBuffer,
 )
+from g5dbc.sim.model.interconnect.ruby.cache import Ruby_Cache
 
+from ...Sequencer import Sequencer
 from ..AbstractController import AbstractController
 
 
-class CacheController(m5_Cache_Controller, AbstractController):
+class CacheController(m5_CHI_Cache_Controller, AbstractController):
     """
     CHI Cache controller
     """
@@ -32,15 +33,7 @@ class CacheController(m5_Cache_Controller, AbstractController):
         self.reqRdy = TriggerMessageBuffer()
         self.snpRdy = TriggerMessageBuffer()
 
-        self.cache = m5_RubyCache(
-            dataAccessLatency=config.latency.data,
-            tagAccessLatency=config.latency.tag,
-            size=config.size,
-            assoc=config.assoc,
-            start_index_bit=config.block_size_bits,
-            resourceStalls=config.resource_stalls,
-            is_icache=config.is_icache(),
-        )
+        self.cache = Ruby_Cache(config)
 
         # Default No prefetcher
         self.use_prefetcher = False
@@ -48,10 +41,10 @@ class CacheController(m5_Cache_Controller, AbstractController):
         # Default No sequencer
         self.sequencer = m5_NULL
 
-    def set_prefetcher(self, config: PrefetcherConf | None):
-        if config is not None:
+    def set_prefetcher(self, pf: PrefetcherConf | None):
+        if pf is not None:
             self.use_prefetcher = True
-            self.prefetcher = PrefetcherFactory.create(config)
+            self.prefetcher = PrefetcherFactory.create(pf)
 
     def connect_network(self, network) -> None:
         """

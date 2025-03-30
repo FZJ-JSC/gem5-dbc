@@ -3,7 +3,8 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 
 from g5dbc.sim.m5_objects import m5_AddrRange
-from g5dbc.sim.m5_objects.ruby import Sequencer
+
+from ..Sequencer import Sequencer
 
 
 class AbstractController:

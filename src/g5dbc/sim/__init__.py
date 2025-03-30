@@ -1,1 +1,1 @@
-from .sim import simulate
+from .srun import srun

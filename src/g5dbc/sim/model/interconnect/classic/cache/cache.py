@@ -1,12 +1,16 @@
-from g5dbc.config.caches import CacheConf
-from g5dbc.config.prefetcher import PrefetcherConf
+from g5dbc.config.caches import CacheConf, PrefetcherConf
 from g5dbc.sim.factory.prefetcher import PrefetcherFactory
 from g5dbc.sim.m5_objects.cache import m5_Cache
 
 
 class ClassicCache(m5_Cache):
     def __init__(self, config: CacheConf, **kwargs):
-        super().__init__(**kwargs)
+        _attr = dict(**kwargs)
+        for k, v in config.extra_parameters.items():
+            if hasattr(m5_Cache, k):
+                _attr[k] = v
+        super().__init__(**_attr)
+
         self.size = config.size
         self.assoc = config.assoc
         self.tag_latency = config.latency.tag

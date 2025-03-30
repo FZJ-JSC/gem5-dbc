@@ -1,11 +1,12 @@
 from abc import ABCMeta, abstractmethod
 
 from g5dbc.config import Config
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
 from g5dbc.sim.m5_objects.sim import m5_SubSystem
 from g5dbc.sim.model.topology import NodeSpec
 
 from ..controller.AbstractController import AbstractController
+from ..Sequencer import Sequencer
 
 
 class AbstractNode(m5_SubSystem):

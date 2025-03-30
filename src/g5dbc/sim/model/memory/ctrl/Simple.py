@@ -8,10 +8,15 @@ from ..AbstractMemCtrl import AbstractMemCtrl
 class SimpleMainMemory(m5_SimpleMemory, AbstractMemCtrl):
 
     def __init__(self, config: MemoryRegionConfig, ctrl_id: int = 0):
+        _attr = dict()
+        for k, v in config.extra_parameters.items():
+            if hasattr(m5_SimpleMemory, k):
+                _attr[k] = v
         super().__init__(
             bandwidth=config.bandwidth,
             latency=config.latency,
             latency_var=config.latency_var,
+            **_attr,
         )
         self._ctrl_id = ctrl_id
         self._numa_id = config.numa_id

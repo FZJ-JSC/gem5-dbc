@@ -16,7 +16,7 @@ class AbstractFUPool(m5_FUPool):
         for label, fu in FU.items():
             # Test for supported operations
             if m5_OpClass.is_supported([op.name for op in fu.ops]):
-                _atr = dict(
+                _attr = dict(
                     count=fu.count,
                     opList=[
                         m5_OpDesc(
@@ -29,31 +29,31 @@ class AbstractFUPool(m5_FUPool):
                 )
                 # Test for label attribute
                 if hasattr(m5_FUDesc, "label"):
-                    _atr["label"] = label
+                    _attr["label"] = label
                 _cls = type(
                     label,
                     (m5_FUDesc,),
-                    {k: v for k, v in _atr.items()},
+                    _attr,
                 )
                 FUList.append(_cls())
         super().__init__(FUList=FUList)
 
 
-class ArmCore(m5_ArmO3CPU, AbstractCore):
+class Arm(m5_ArmO3CPU, AbstractCore):
 
-    def __init__(self, cpu_conf: CPUConf, core_id: int = 0):
+    def __init__(self, core_id: int, cpu_conf: CPUConf, bp=None):
         if cpu_conf.core is None:
             raise ValueError("Core config unavailable")
-
-        core_conf = {
+        _attr = {
             k: v for k, v in cpu_conf.core.to_dict().items() if hasattr(m5_ArmO3CPU, k)
         }
-
-        super().__init__(cpu_id=core_id, **core_conf)
+        for k, v in cpu_conf.extra_parameters.items():
+            if hasattr(m5_ArmO3CPU, k):
+                _attr[k] = v
+        super().__init__(cpu_id=core_id, **_attr)
         self.fuPool = AbstractFUPool(cpu_conf.FU)
-
-    def set_branchPred(self, bpred) -> None:
-        self.branchPred = bpred
+        if bp is not None:
+            self.branchPred = bp
 
     def create_threads(self) -> None:
         self.createThreads()

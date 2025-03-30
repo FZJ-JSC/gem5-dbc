@@ -2,11 +2,12 @@ from g5dbc.config import Config
 from g5dbc.config.caches import CacheConf
 from g5dbc.config.caches.controller import CacheCtrlConf
 from g5dbc.config.caches.latency import Latency
-from g5dbc.sim.m5_objects.ruby import Sequencer, m5_RubySystem
+from g5dbc.sim.m5_objects.ruby import m5_RubySystem
 from g5dbc.sim.model.interconnect.ruby.controller import AbstractController
 from g5dbc.sim.model.interconnect.ruby.controller.chi import CacheController
 from g5dbc.sim.model.topology import NodeSpec
 
+from ...Sequencer import Sequencer
 from ..AbstractNode import AbstractNode
 
 

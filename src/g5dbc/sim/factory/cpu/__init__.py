@@ -1,9 +1,8 @@
 from g5dbc.config import Config
-from g5dbc.config.bpred import BPredConf
 from g5dbc.config.cpus import CPUConf
 from g5dbc.sim.model.cpu.AbstractProcessor import AbstractProcessor
-from g5dbc.sim.model.cpu.arm.ArmCore import ArmCore
 from g5dbc.sim.model.cpu.atomic.AtomicCore import AtomicCore
+from g5dbc.sim.model.cpu.o3cpu import Arm
 
 from .bpred import BPredFactory
 
@@ -14,8 +13,7 @@ class CoreFactory:
         core: AbstractProcessor | None = None
         match cpu_conf.model:
             case "Arm":
-                core = ArmCore(cpu_conf, cpu_id)
-                core.set_branchPred(BPredFactory.create(config.bpred[cpu_conf.bpred]))
+                core = Arm(cpu_id, cpu_conf, bp=BPredFactory.create(cpu_conf.bpred))
             case "AtomicSimple":
                 core = AtomicCore(cpu_id)
             case _:
