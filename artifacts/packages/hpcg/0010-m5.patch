@@ -1,0 +1,350 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 181b030..d94b3b4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ #
+ # HPCG Benchmark CMake configuration
+ #
+-cmake_minimum_required( VERSION 3.0 FATAL_ERROR )
++cmake_minimum_required( VERSION 3.10 FATAL_ERROR )
+ 
+ project( hpcg
+     VERSION 3.1
+@@ -18,6 +18,8 @@ option(HPCG_ENABLE_DETAILED_DEBUG "Enable detailed debug build" OFF)
+ option(HPCG_ENABLE_MPI "Enable MPI support" OFF)
+ option(HPCG_ENABLE_LONG_LONG "Enable use of 'long long' type for global indices" ON)
+ option(HPCG_ENABLE_OPENMP "Enable OpenMP support" OFF)
++# M5
++option ( HPCG_USE_M5      "Enable m5 instrumentation"              OFF )
+ 
+ add_executable( xhpcg src/main.cpp src/CG.cpp src/CG_ref.cpp src/TestCG.cpp
+     src/ComputeResidual.cpp src/ExchangeHalo.cpp src/GenerateGeometry.cpp
+@@ -69,3 +71,9 @@ if (HPCG_ENABLE_OPENMP)
+ else ()
+     target_compile_definitions(xhpcg PRIVATE HPCG_NO_OPENMP)
+ endif ()
++
++if( HPCG_USE_M5 )
++    target_compile_definitions(xhpcg PRIVATE USEM5OPS )
++    target_link_libraries(xhpcg m5)
++    set_target_properties(xhpcg PROPERTIES OUTPUT_NAME "xhpcg-m5")
++endif()
+\ No newline at end of file
+diff --git a/src/OutputFile.cpp b/src/OutputFile.cpp
+index cd5f29f..7410fe5 100644
+--- a/src/OutputFile.cpp
++++ b/src/OutputFile.cpp
+@@ -110,6 +110,7 @@ OutputFile::generate(void) {
+     result += (*it)->generateRecursive("");
+   }
+ 
++  /*
+   time_t rawtime;
+   time(&rawtime);
+   tm * ptm = localtime(&rawtime);
+@@ -124,6 +125,7 @@ OutputFile::generate(void) {
+   ofstream myfile(filename.c_str());
+   myfile << result;
+   myfile.close();
++  */
+ 
+   return result;
+ }
+diff --git a/src/ReportResults.cpp b/src/ReportResults.cpp
+index 0e20b27..d231659 100644
+--- a/src/ReportResults.cpp
++++ b/src/ReportResults.cpp
+@@ -51,7 +51,7 @@ using std::endl;
+   @see YAML_Doc
+ */
+ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgSets, int refMaxIters,int optMaxIters, double times[],
+-    const TestCGData & testcg_data, const TestSymmetryData & testsymmetry_data, const TestNormsData & testnorms_data, int global_failure, bool quickPath) {
++    const TestCGData & testcg_data, const TestSymmetryData & testsymmetry_data, const TestNormsData & testnorms_data, int global_failure, bool quickPath, HPCG_Params & params) {
+ 
+   double minOfficialTime = 1800; // Any official benchmark result must run at least this many seconds
+ 
+@@ -275,6 +275,7 @@ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgS
+       doc.get("Memory Use Information")->get("Coarse Grids")->add("Memory used",fnbytesPerLevel[i]/1000000000.0);
+     }
+ 
++if (params.validation > 0) {
+     doc.add("########## V&V Testing Summary  ##########","");
+     doc.add("Spectral Convergence Tests","");
+     if (testcg_data.count_fail==0)
+@@ -296,6 +297,7 @@ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgS
+       doc.get(DepartureFromSymmetry)->add("Result", "FAILED");
+     doc.get(DepartureFromSymmetry)->add("Departure for SpMV", testsymmetry_data.depsym_spmv);
+     doc.get(DepartureFromSymmetry)->add("Departure for MG", testsymmetry_data.depsym_mg);
++  }
+ 
+     doc.add("########## Iterations Summary  ##########","");
+     doc.add("Iteration Count Information","");
+@@ -405,9 +407,9 @@ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgS
+     }
+ 
+     std::string yaml = doc.generate();
+-#ifdef HPCG_DEBUG
++//#ifdef HPCG_DEBUG
+     HPCG_fout << yaml;
+-#endif
++//#endif
+   }
+   return;
+ }
+diff --git a/src/ReportResults.hpp b/src/ReportResults.hpp
+index 43561a4..32d4911 100644
+--- a/src/ReportResults.hpp
++++ b/src/ReportResults.hpp
+@@ -20,6 +20,6 @@
+ #include "TestNorms.hpp"
+ 
+ void ReportResults(const SparseMatrix & A, int numberOfMgLevels, int numberOfCgSets, int refMaxIters, int optMaxIters, double times[],
+-    const TestCGData & testcg_data, const TestSymmetryData & testsymmetry_data, const TestNormsData & testnorms_data, int global_failure, bool quickPath);
++    const TestCGData & testcg_data, const TestSymmetryData & testsymmetry_data, const TestNormsData & testnorms_data, int global_failure, bool quickPath, HPCG_Params &params);
+ 
+ #endif // REPORTRESULTS_HPP
+diff --git a/src/finalize.cpp b/src/finalize.cpp
+index a60c75b..3d64a10 100644
+--- a/src/finalize.cpp
++++ b/src/finalize.cpp
+@@ -25,6 +25,6 @@
+ */
+ int
+ HPCG_Finalize(void) {
+-  HPCG_fout.close();
++  //HPCG_fout.close();
+   return 0;
+ }
+diff --git a/src/hpcg.hpp b/src/hpcg.hpp
+index df4c9d7..de5b2d1 100644
+--- a/src/hpcg.hpp
++++ b/src/hpcg.hpp
+@@ -24,7 +24,7 @@
+ #include <fstream>
+ #include "Geometry.hpp"
+ 
+-extern std::ofstream HPCG_fout;
++extern std::ostream HPCG_fout;
+ 
+ struct HPCG_Params_STRUCT {
+   int comm_size; //!< Number of MPI processes in MPI_COMM_WORLD
+@@ -40,6 +40,10 @@ struct HPCG_Params_STRUCT {
+   int pz; //!< Partition in the z processor dimension, default is npz
+   local_int_t zl; //!< nz for processors in the z dimension with value less than pz
+   local_int_t zu; //!< nz for processors in the z dimension with value greater than pz
++  int validation;
++  int extra_setup;
++  int numberOfCgSets;
++  int maxCgIters;
+ };
+ /*!
+   HPCG_Params is a shorthand for HPCG_Params_STRUCT
+diff --git a/src/init.cpp b/src/init.cpp
+index 7cad7b6..d4d81c2 100644
+--- a/src/init.cpp
++++ b/src/init.cpp
+@@ -38,7 +38,7 @@ const char* NULLDEVICE="/dev/null";
+ 
+ #include "ReadHpcgDat.hpp"
+ 
+-std::ofstream HPCG_fout; //!< output file stream for logging activities during HPCG run
++std::ostream HPCG_fout(std::cout.rdbuf()); //!< output file stream for logging activities during HPCG run
+ 
+ static int
+ startswith(const char * s, const char * prefix) {
+@@ -70,7 +70,7 @@ HPCG_Init(int * argc_p, char ** *argv_p, HPCG_Params & params) {
+   char ** argv = *argv_p;
+   char fname[80];
+   int i, j, *iparams;
+-  char cparams[][7] = {"--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="};
++  char cparams[][8] = {"--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz=", "--reps=", "--iter="};
+   time_t rawtime;
+   tm * ptm;
+   const int nparams = (sizeof cparams) / (sizeof cparams[0]);
+@@ -131,6 +131,9 @@ HPCG_Init(int * argc_p, char ** *argv_p, HPCG_Params & params) {
+   params.npy = iparams[8];
+   params.npz = iparams[9];
+ 
++  params.numberOfCgSets = iparams[10];
++  params.maxCgIters = iparams[11];
++
+ #ifndef HPCG_NO_MPI
+   MPI_Comm_rank( MPI_COMM_WORLD, &params.comm_rank );
+   MPI_Comm_size( MPI_COMM_WORLD, &params.comm_size );
+@@ -147,24 +150,29 @@ HPCG_Init(int * argc_p, char ** *argv_p, HPCG_Params & params) {
+ #endif
+ //  for (i = 0; i < nparams; ++i) std::cout << "rank = "<< params.comm_rank << " iparam["<<i<<"] = " << iparams[i] << "\n";
+ 
+-  time ( &rawtime );
+-  ptm = localtime(&rawtime);
+-  sprintf( fname, "hpcg%04d%02d%02dT%02d%02d%02d.txt",
+-      1900 + ptm->tm_year, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec );
++  //time ( &rawtime );
++  //ptm = localtime(&rawtime);
++  //sprintf( fname, "hpcg%04d%02d%02dT%02d%02d%02d.txt",
++  //    1900 + ptm->tm_year, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec );
+ 
+-  if (0 == params.comm_rank) {
+-    HPCG_fout.open(fname);
+-  } else {
++  //if (0 == params.comm_rank) {
++  //  HPCG_fout.open(fname);
++  //} else {
+ #if defined(HPCG_DEBUG) || defined(HPCG_DETAILED_DEBUG)
+-    sprintf( fname, "hpcg%04d%02d%02dT%02d%02d%02d_%d.txt",
+-        1900 + ptm->tm_year, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, params.comm_rank );
+-    HPCG_fout.open(fname);
++    //sprintf( fname, "hpcg%04d%02d%02dT%02d%02d%02d_%d.txt",
++    //    1900 + ptm->tm_year, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, params.comm_rank );
++    //HPCG_fout.open(fname);
+ #else
+-    HPCG_fout.open(NULLDEVICE);
++    //HPCG_fout.open(NULLDEVICE);
+ #endif
+-  }
++  //}
+ 
+   free( iparams );
+ 
++  if(params.numberOfCgSets > 0) {
++    params.extra_setup = 0;
++    params.validation = 0;
++  }
++
+   return 0;
+ }
+diff --git a/src/main.cpp b/src/main.cpp
+index d9dca5b..7a073b5 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -61,6 +61,10 @@ using std::endl;
+ #include "TestSymmetry.hpp"
+ #include "TestNorms.hpp"
+ 
++#ifdef USEM5OPS
++#include <gem5/m5ops.h>
++#endif
++
+ /*!
+   Main driver program: Construct synthetic problem, run V&V tests, compute benchmark parameters, run benchmark, report results.
+ 
+@@ -211,11 +215,13 @@ int main(int argc, char * argv[]) {
+   double normr0 = 0.0;
+   int refMaxIters = 50;
+   numberOfCalls = 1; // Only need to run the residual reduction analysis once
++  int err_count = 0;
++  double refTolerance = 1.0;
+ 
++if(params.extra_setup > 0) {
+   // Compute the residual reduction for the natural ordering and reference kernels
+   std::vector< double > ref_times(9,0.0);
+   double tolerance = 0.0; // Set tolerance to zero to make all runs do maxIters iterations
+-  int err_count = 0;
+   for (int i=0; i< numberOfCalls; ++i) {
+     ZeroVector(x);
+     ierr = CG_ref( A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, &ref_times[0], true);
+@@ -223,7 +229,8 @@ int main(int argc, char * argv[]) {
+     totalNiters_ref += niters;
+   }
+   if (rank == 0 && err_count) HPCG_fout << err_count << " error(s) in call(s) to reference CG." << endl;
+-  double refTolerance = normr / normr0;
++  refTolerance = normr / normr0;
++}
+ 
+   // Call user-tunable set up function.
+   double t7 = mytimer();
+@@ -243,14 +250,18 @@ int main(int argc, char * argv[]) {
+   // Validation Testing Phase //
+   //////////////////////////////
+ 
++  TestCGData testcg_data;
++  
++  TestSymmetryData testsymmetry_data;
++  testcg_data.count_pass = testcg_data.count_fail = testsymmetry_data.count_fail = 0;
++
++if(params.validation > 0) {
+ #ifdef HPCG_DEBUG
+   t1 = mytimer();
+ #endif
+-  TestCGData testcg_data;
+-  testcg_data.count_pass = testcg_data.count_fail = 0;
++
+   TestCG(A, data, b, x, testcg_data);
+ 
+-  TestSymmetryData testsymmetry_data;
+   TestSymmetry(A, b, xexact, testsymmetry_data);
+ 
+ #ifdef HPCG_DEBUG
+@@ -260,11 +271,13 @@ int main(int argc, char * argv[]) {
+ #ifdef HPCG_DEBUG
+   t1 = mytimer();
+ #endif
++}
+ 
+   //////////////////////////////
+   // Optimized CG Setup Phase //
+   //////////////////////////////
+ 
++if (params.extra_setup > 0) {
+   niters = 0;
+   normr = 0.0;
+   normr0 = 0.0;
+@@ -307,6 +320,8 @@ int main(int argc, char * argv[]) {
+       HPCG_fout << "Failed to reduce the residual " << tolerance_failures << " times." << endl;
+   }
+ 
++  params.maxCgIters = optNiters;
++
+   ///////////////////////////////
+   // Optimized CG Timing Phase //
+   ///////////////////////////////
+@@ -315,7 +330,7 @@ int main(int argc, char * argv[]) {
+   // The variable total_runtime is the target benchmark execution time in seconds
+ 
+   double total_runtime = params.runningTime;
+-  int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
++  params.numberOfCgSets  = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
+ 
+ #ifdef HPCG_DEBUG
+   if (rank==0) {
+@@ -323,21 +338,28 @@ int main(int argc, char * argv[]) {
+     HPCG_fout << "Number of CG sets: " << numberOfCgSets << endl;
+   }
+ #endif
++}
+ 
+   /* This is the timed run for a specified amount of time. */
+-
+-  optMaxIters = optNiters;
++  int numberOfCgSets = params.numberOfCgSets;
++  int optMaxIters = params.maxCgIters;
+   double optTolerance = 0.0;  // Force optMaxIters iterations
+   TestNormsData testnorms_data;
+   testnorms_data.samples = numberOfCgSets;
+   testnorms_data.values = new double[numberOfCgSets];
+ 
+   for (int i=0; i< numberOfCgSets; ++i) {
++#ifdef USEM5OPS
++    m5_reset_stats(0,0);
++#endif
+     ZeroVector(x); // Zero out x
+     ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, &times[0], true);
+     if (ierr) HPCG_fout << "Error in call to CG: " << ierr << ".\n" << endl;
+     if (rank==0) HPCG_fout << "Call [" << i << "] Scaled Residual [" << normr/normr0 << "]" << endl;
+     testnorms_data.values[i] = normr/normr0; // Record scaled residual from this run
++#ifdef USEM5OPS
++  m5_dump_stats(0,0);
++#endif
+   }
+ 
+   // Compute difference between known exact solution and computed solution
+@@ -357,7 +379,7 @@ int main(int argc, char * argv[]) {
+   ////////////////////
+ 
+   // Report results to YAML file
+-  ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, &times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath);
++  ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, &times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath, params);
+ 
+   // Clean up
+   DeleteMatrix(A); // This delete will recursively delete all coarse grid data

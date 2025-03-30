@@ -1,0 +1,76 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 973f14ede7..b00dc4de09 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -419,6 +419,9 @@ option(GMX_PHYSICAL_VALIDATION
+        OFF)
+ mark_as_advanced(GMX_PHYSICAL_VALIDATION)
+ 
++# M5
++option ( GMX_USE_M5      "Enable m5 instrumentation"              OFF )
++
+ ######################################################################
+ # Detect OpenMP support
+ ######################################################################
+@@ -929,6 +932,11 @@ if (GMX_BUILD_FOR_COVERAGE)
+     set(CMAKE_EXE_LINKER_FLAGS "-fprofile-arcs -ftest-coverage")
+ endif()
+ 
++if( GMX_USE_M5 )
++    add_definitions( -DUSEM5OPS )
++    list(APPEND GMX_EXTRA_LIBRARIES m5)
++endif()
++
+ # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
+ # these are set after everything else
+ if (GMX_LIB_MPI)
+diff --git a/cmake/gmxManageSuffixes.cmake b/cmake/gmxManageSuffixes.cmake
+index 2a3c8223c0..83a871a7fd 100644
+--- a/cmake/gmxManageSuffixes.cmake
++++ b/cmake/gmxManageSuffixes.cmake
+@@ -62,6 +62,10 @@ if (GMX_DEFAULT_SUFFIX)
+         set(GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
+         set(GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
+     endif()
++    if (GMX_USE_M5)
++        set(GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_m5")
++        set(GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_m5")
++    endif()
+     if (SUFFIXES_CHANGED)
+         message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+         message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+diff --git a/src/gromacs/timing/walltime_accounting.cpp b/src/gromacs/timing/walltime_accounting.cpp
+index d26d2be668..c611e153a8 100644
+--- a/src/gromacs/timing/walltime_accounting.cpp
++++ b/src/gromacs/timing/walltime_accounting.cpp
+@@ -46,6 +46,10 @@
+ #    include <sys/time.h>
+ #endif
+ 
++#ifdef USEM5OPS
++#include <gem5/m5ops.h>
++#endif
++
+ #include "gromacs/utility/basedefinitions.h"
+ #include "gromacs/utility/smalloc.h"
+ 
+@@ -149,12 +153,19 @@ void walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accountin
+ {
+     walltime_accounting_reset_time(walltime_accounting, 0);
+     walltime_accounting->start_time_stamp = walltime_accounting->reset_time_stamp;
++#ifdef USEM5OPS
++    m5_reset_stats(0,0);
++#endif
+ }
+ 
+ void walltime_accounting_end_time(gmx_walltime_accounting_t walltime_accounting)
+ {
+     double now, now_per_thread;
+ 
++#ifdef USEM5OPS
++    m5_dump_stats(0,0);
++#endif
++
+     now            = gmx_gettime();
+     now_per_thread = gmx_gettime_per_thread();
+ 

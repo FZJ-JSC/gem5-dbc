@@ -1,0 +1,138 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 63f67232..a0226f6f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -135,6 +135,9 @@ if( DEFINED CUDA_LINK_LIBRARIES_KEYWORD AND NOT CUDA_LINK_LIBRARIES_KEYWORD STRE
+     set( WALBERLA_LINK_LIBRARIES_KEYWORD PUBLIC )
+ endif()
+ 
++# M5
++option ( WALBERLA_USE_M5      "Enable m5 instrumentation"              OFF )
++
+ ############################################################################################################################
+ 
+ 
+@@ -1287,6 +1290,14 @@ endif()
+ 
+ ############################################################################################################################
+ 
++if( WALBERLA_USE_M5 )
++	add_definitions( -DUSEM5OPS )
++	list ( APPEND SERVICE_LIBS -lm5 )
++endif()
++
++############################################################################################################################
++
++
+ 
+ 
+ 
+diff --git a/apps/benchmarks/CMakeLists.txt b/apps/benchmarks/CMakeLists.txt
+index d5612a35..b76c7e9c 100644
+--- a/apps/benchmarks/CMakeLists.txt
++++ b/apps/benchmarks/CMakeLists.txt
+@@ -1,14 +1,14 @@
+-add_subdirectory( AdaptiveMeshRefinementFluidParticleCoupling )
+-add_subdirectory( ComplexGeometry )
+-add_subdirectory( DEM )
+-add_subdirectory( MeshDistance )
+-add_subdirectory( CouetteFlow )
+-add_subdirectory( ForcesOnSphereNearPlaneInShearFlow )
+-add_subdirectory( NonUniformGrid )
+-add_subdirectory( MotionSingleHeavySphere )
+-add_subdirectory( PeriodicGranularGas )
+-add_subdirectory( PoiseuilleChannel )
+-add_subdirectory( ProbeVsExtraMessage )
+-add_subdirectory( SchaeferTurek )
++#add_subdirectory( AdaptiveMeshRefinementFluidParticleCoupling )
++#add_subdirectory( ComplexGeometry )
++#add_subdirectory( DEM )
++#add_subdirectory( MeshDistance )
++#add_subdirectory( CouetteFlow )
++#add_subdirectory( ForcesOnSphereNearPlaneInShearFlow )
++#add_subdirectory( NonUniformGrid )
++#add_subdirectory( MotionSingleHeavySphere )
++#add_subdirectory( PeriodicGranularGas )
++#add_subdirectory( PoiseuilleChannel )
++#add_subdirectory( ProbeVsExtraMessage )
++#add_subdirectory( SchaeferTurek )
+ add_subdirectory( UniformGrid )
+-add_subdirectory( UniformGridGPU )
++#add_subdirectory( UniformGridGPU )
+diff --git a/apps/benchmarks/UniformGrid/CMakeLists.txt b/apps/benchmarks/UniformGrid/CMakeLists.txt
+index 512aa80f..2e6070d9 100644
+--- a/apps/benchmarks/UniformGrid/CMakeLists.txt
++++ b/apps/benchmarks/UniformGrid/CMakeLists.txt
+@@ -1,6 +1,14 @@
+ 
+ waLBerla_link_files_to_builddir( "*.dat" )
+ 
++if( WALBERLA_USE_M5 )
+ 
+-waLBerla_add_executable ( NAME UniformGridBenchmark 
+-                          DEPENDS blockforest boundary core domain_decomposition field lbm postprocessing timeloop vtk )
+\ No newline at end of file
++waLBerla_add_executable ( NAME UniformGridBenchmark-m5
++                          DEPENDS blockforest boundary core domain_decomposition field lbm postprocessing timeloop vtk )
++
++else()
++
++waLBerla_add_executable ( NAME UniformGridBenchmark
++                          DEPENDS blockforest boundary core domain_decomposition field lbm postprocessing timeloop vtk )
++
++endif()
+diff --git a/apps/benchmarks/UniformGrid/UniformGrid.cpp b/apps/benchmarks/UniformGrid/UniformGrid.cpp
+index 96e50eb1..da570365 100644
+--- a/apps/benchmarks/UniformGrid/UniformGrid.cpp
++++ b/apps/benchmarks/UniformGrid/UniformGrid.cpp
+@@ -85,6 +85,9 @@
+ #include <iostream>
+ #include <memory>
+ 
++#ifdef USEM5OPS
++#include <gem5/m5ops.h>
++#endif
+ 
+ 
+ namespace uniform_grid {
+@@ -744,9 +747,14 @@ void run( const shared_ptr< Config > & config, const LatticeModel_T & latticeMod
+       WcTimer timer;
+       timer.start();
+ 
++#ifdef USEM5OPS
++	m5_reset_stats(0,0);
++#endif
+       for( uint_t innerRun = 0; innerRun < innerTimeSteps; ++innerRun )
+          timeloop.singleStep( timeloopTiming );
+-
++#ifdef USEM5OPS
++	m5_dump_stats(0,0);
++#endif
+       timer.end();
+ 
+       double time = timer.max();
+diff --git a/apps/benchmarks/UniformGrid/input.dat b/apps/benchmarks/UniformGrid/input.dat
+index e9be243c..45c6441d 100644
+--- a/apps/benchmarks/UniformGrid/input.dat
++++ b/apps/benchmarks/UniformGrid/input.dat
+@@ -25,7 +25,7 @@ UniformGrid
+    outerTimeSteps 5;  // total number of time steps = outerTimeSteps * innerTimeSteps
+    innerTimeSteps 50; // For each outer loop, performance data is logged.
+    
+-   logToSqlDB  true;
++   logToSqlDB  false;
+    sqlFile     performance.sqlite; // database used for logging the performance
+    
+    // LBM 
+diff --git a/src/core/RandomUUID.h b/src/core/RandomUUID.h
+index 45c1c080..0b83c9d5 100644
+--- a/src/core/RandomUUID.h
++++ b/src/core/RandomUUID.h
+@@ -21,6 +21,7 @@
+ #pragma once
+ 
+ #include <ostream>
++#include <cstdint>
+ #include <string>
+ 
+ namespace walberla {

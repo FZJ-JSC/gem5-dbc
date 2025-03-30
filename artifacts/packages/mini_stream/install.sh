@@ -3,7 +3,6 @@
 # PKG
 PKG_NAME="mini_stream"
 
-
 mkdir -p $SRCDIR/$PKG_NAME
 
 cp Makefile *.c $SRCDIR/$PKG_NAME
