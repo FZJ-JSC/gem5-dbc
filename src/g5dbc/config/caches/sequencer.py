@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
-class Sequencer:
+class SequencerConf:
     max_outstanding_requests: int = 256

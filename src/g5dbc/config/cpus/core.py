@@ -75,9 +75,7 @@ class CoreConfig:
     trapLatency: int = 13
     fetchTrapLatency: int = 1
     store_set_clear_period: int = 250000
-
     numRobs: int = 1
-
     needsTSO: bool = False
 
     def to_dict(self) -> dict:

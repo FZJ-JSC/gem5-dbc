@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass, field
 class BTBConf:
     numEntries: int = 4096
     tagBits: int = 16
-    associativity: int = 1
+    instShiftAmt: int = 2
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -13,7 +13,6 @@ class BTBConf:
 
 @dataclass
 class BPredConf:
-    name: str
     model: str
     BTB: BTBConf
     settings: dict = field(default_factory=dict)

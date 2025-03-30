@@ -6,11 +6,12 @@ from .region import MemoryRegionConfig
 
 @dataclass
 class MemoryConf:
-    controller: MemCtrlConfig
+    controller: MemCtrlConfig = field(default_factory=MemCtrlConfig)
     regions: list[MemoryRegionConfig] = field(default_factory=list)
 
     def __post_init__(self):
-        self.controller = MemCtrlConfig(**self.controller)
+        if isinstance(self.controller, dict):
+            self.controller = MemCtrlConfig(**self.controller)
 
         for n, v in enumerate(self.regions):
             if isinstance(v, dict):

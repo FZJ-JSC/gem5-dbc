@@ -5,13 +5,24 @@ from .config import Config
 
 def check_config(config: Config) -> bool:
     """
-    Check Parameter constraints
+    Check configuration parameter constraints
     """
 
-    assert (
-        config.interconnect.garnet.data_width == config.interconnect.simple.data_width
-    ), "Data width inconsistency"
-    config.network.data_width = config.interconnect.garnet.data_width
+    if config.network.clock == "":
+        config.network.clock = config.system.clock
+
+    if config.interconnect.garnet is not None:
+        config.interconnect.garnet.data_width = config.network.data_width
+        config.interconnect.garnet.data_link_width = (
+            config.interconnect.garnet.cntrl_msg_size
+            + config.interconnect.garnet.data_width
+        )
+        config.interconnect.garnet.link_width_bits = (
+            config.interconnect.garnet.data_link_width * 8
+        )
+
+    if config.interconnect.simple is not None:
+        config.interconnect.simple.data_width = config.network.data_width
 
     config.memory.controller.data_channel_size = config.network.data_width
     for name, conf in config.caches.items():
@@ -20,7 +31,7 @@ def check_config(config: Config) -> bool:
         conf.block_size_bits = int(math.log(config.system.cache_line_size, 2))
 
     if config.system.architecture == "arm64":
-        match config.system.interconnect:
+        match config.interconnect.model:
             case "classic":
                 config.system.platform = "VExpress_GEM5_V1"
             case "simple":
