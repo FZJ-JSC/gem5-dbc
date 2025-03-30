@@ -35,6 +35,6 @@ source "qemu" "linux_image" {
 
   ssh_username = "root"
   ssh_password = "root"
-  ssh_timeout  = "240m"
+  ssh_timeout  = "600m"
   shutdown_command = "/sbin/poweroff"  
 }

@@ -3,6 +3,11 @@
 PRVDIR=$PACKER_PROVISION_SYSTEM
 KEYDIR=$PACKER_PROVISION_KEYS
 
+# Block systemd, see https://wiki.debian.org/Init
+mkdir -p /etc/apt/preferences.d
+mv $PRVDIR/etc/apt/preferences.d/local-pin-init /etc/apt/preferences.d/
+chmod 0644 /etc/apt/preferences.d/local-pin-init
+
 # Network interfaces
 mv $PRVDIR/etc/network/interfaces /etc/network/interfaces
 chmod 0644 /etc/network/interfaces

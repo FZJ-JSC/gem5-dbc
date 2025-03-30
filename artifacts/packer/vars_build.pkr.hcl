@@ -30,7 +30,7 @@ variable "packages" {
   default = [
     "gem5",
     "mini_stream",
-    "linux"   
+    "linux",
   ]
 }
 

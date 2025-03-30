@@ -1,0 +1,11 @@
+Package: systemd-sysv
+Pin: release o=Debian
+Pin-Priority: -1
+
+Package: systemd
+Pin: origin ""
+Pin-Priority: -1
+
+Package: cgmanager
+Pin: origin ""
+Pin-Priority: -1
