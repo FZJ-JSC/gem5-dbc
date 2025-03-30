@@ -3,11 +3,11 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from ..benchmark import AbstractBenchmark
-from ..parser import StatsParser
-from ..parser.flatjs import FlatJS
 from .benchmark import instantiate_benchmark
 from .config_file import read_config_file
 from .options import Options
+from .parser import StatsParser
+from .parser.flatjs import FlatJS
 
 
 def parse_subdir(args: tuple[Path, Path, AbstractBenchmark, StatsParser]) -> dict:
@@ -64,8 +64,8 @@ def parse_workload(opts: Options) -> int:
     """
     # Instantiate benchmark
 
-    benchmark_mod = opts.parse[0]
-    benchmark = instantiate_benchmark(benchmark_mod)
+    module_path = opts.parse[0]
+    benchmark = instantiate_benchmark(module_path, name=module_path.parent.stem)
 
     # Get benchmark name
     name = benchmark.get_name()

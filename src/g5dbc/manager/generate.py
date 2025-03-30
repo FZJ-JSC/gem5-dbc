@@ -27,14 +27,8 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
 
     benchmark_cfg = opts.generate[1]
 
-    # Search artifacts and read config file
-    s_path = [
-        opts.user_conf_dir,
-        opts.user_data_dir,
-        opts.artifacts_dir,
-        opts.workspace_dir,
-    ]
-    config = read_config_file(benchmark_cfg, s_path)
+    # Read config file
+    config = read_config_file(benchmark_cfg, opts.artifacts)
 
     name = benchmark.get_name()
     configs_dir = opts.workspace_dir.joinpath(name, opts.config_output)
@@ -42,11 +36,28 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
     config.simulation.output_dir = str(configs_dir.joinpath(params["row_id"]))
     config.parameters = dict([(k, v) for k, v in params.items() if k != "row_id"])
 
-    config = benchmark.get_config(config, config.parameters)
+    config = benchmark.update_config(config.parameters, config)
 
     # Check if config is valid
     if not check_config(config):
         return -1
+
+    # Get gem5 binary with correct version
+    gem5_bin = config.get_artifact(
+        typename="GEM5",
+        name=config.simulation.gem5_binary,
+        version=config.simulation.gem5_version,
+    )
+
+    if gem5_bin is None:
+        raise Exception(
+            f"Could not find gem5 binary '{config.simulation.gem5_binary}' version '{config.simulation.gem5_version}'. "
+            f"Please check your local artifact index {opts.user_conf_dir}."
+        )
+
+    # Update simulation info
+    config.simulation.gem5_binary = gem5_bin.name
+    config.simulation.gem5_version = gem5_bin.version
 
     # Create output directory
     output_dir = Path(config.simulation.output_dir)
@@ -56,34 +67,27 @@ def generate_work_directory(args: tuple[dict, AbstractBenchmark, Options]) -> in
     config_file = output_dir.joinpath("config.yaml")
     config_file = write_config_file(config_file, config)
 
-    benchmark_cmd = benchmark.get_command(config)
-    benchmark_env = (
-        "\n".join(
-            [
-                'export {}="{}"'.format(k, v)
-                for k, v in benchmark.get_env(config).items()
-            ]
-        )
-        + "\n"
-    )
     # Write work script
     write_template(
         output_dir,
         opts.user_data_dir.joinpath("templates", config.simulation.work_script),
-        benchmark_env=benchmark_env,
-        benchmark_cmd=benchmark_cmd,
+        benchmark_cmd=benchmark.get_command(config),
+        benchmark_env="\n".join(
+            [
+                'export {}="{}"'.format(k, v)
+                for k, v in benchmark.get_env(config).items()
+            ]
+        ),
     )
 
     # Write srun script
     write_template(
         output_dir,
         opts.user_data_dir.joinpath("templates", config.simulation.srun_script),
-        gem5_bin=config.search_artifact("GEM5", version=config.simulation.gem5_version)
-        .get("gem5.opt")
-        .path,
+        gem5_bin=gem5_bin.path,
         gem5_script=configs_dir.parent.joinpath(config.simulation.gem5_script),
         gem5_workdir=output_dir,
-        gem5_output="output.log",
+        gem5_output=config.simulation.output_log,
     ).chmod(0o744)
 
     return 0
@@ -126,7 +130,7 @@ def generate_workload(opts: Options) -> int:
 
     # Copy benchmark python module
     src = benchmark_mod
-    dst = configs_dir.parent.joinpath(benchmark_mod.name)
+    dst = configs_dir.parent.joinpath("main.py")
     copy2(src, dst)
 
     # Copy wrapper srun.py

@@ -2,19 +2,7 @@ import re
 from pathlib import Path
 
 
-def parse_number(x) -> int | float | None:
-    try:
-        return int(x, 0)
-    except:
-        pass
-    try:
-        return float(x)
-    except:
-        pass
-    return None
-
-
-def parse_number_text(x: str | None, default="") -> int | float | str:
+def parse_number_str(x: str | None, default="") -> int | float | str:
     if x is None:
         return default
     if x is not None:
@@ -29,21 +17,40 @@ def parse_number_text(x: str | None, default="") -> int | float | str:
     return str(x)
 
 
+def parse_number_none(x: str | None, default="") -> int | float | None:
+    try:
+        return int(x, 0)
+    except:
+        pass
+    try:
+        return float(x)
+    except:
+        pass
+    return None
+
+
 def parse_gem5_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+)")
     h = [
-        (n, v)
-        for n, v in enumerate([parse_number_text(n) for n in re.findall(r, line)])
+        (n, v) for n, v in enumerate([parse_number_str(n) for n in re.findall(r, line)])
     ]
     return h
 
 
 def parse_gem5_sparse_histogram(line: str):
     r = re.compile(r"\|\s*([+-.\d]+),([+-.\d]+)")
-    h = [
-        (parse_number_text(n[0]), parse_number_text(n[1])) for n in re.findall(r, line)
-    ]
+    h = [(parse_number_str(n[0]), parse_number_str(n[1])) for n in re.findall(r, line)]
     return h
+
+
+def parse_gem5_sparse_list(line: str):
+    r1 = line.split("|")
+    r2 = [e.split(";") for e in r1]
+    r3 = [
+        [tuple([parse_number_none(n) for n in e2.split(",")]) for e2 in e1[:-1]]
+        for e1 in r2[1:]
+    ]
+    return r3
 
 
 def parse_gem5_key(key: str):
@@ -76,12 +83,18 @@ def normalize_gem5_stats_line(line: str):
             v = list(parse_gem5_histogram(line))
             k = "list"
         else:
-            v = parse_number_text(s[1])
+            v = parse_number_str(s[1])
     else:
-        if c == "|" and k == "values":
+        if c == "|" and k in [
+            "values",
+        ]:
             v = list(parse_gem5_sparse_histogram(line))
+        elif c == "|" and k in [
+            "selected",
+        ]:
+            v = parse_gem5_sparse_list(line)
         else:
-            v = parse_number_text(s[1])
+            v = parse_number_str(s[1])
     # Catch buggy stats.txt
     v = 0 if v == "#" or v == "(Unspecified)" else v
     return p, k, v
