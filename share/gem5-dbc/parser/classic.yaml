@@ -1,0 +1,6 @@
+- - system\.interconnect\.(l1d|l1i|l2|l3)(cache)?\.?(\d+)?\.(\w+)
+  - - 'classic_{0}_{2}_{3}'
+- - system\.interconnect\.(l1d|l1i|l2|l3)(cache)?\.?(\d+)?\.(\w+)\.(\w+)
+  - - 'classic_{0}_{2}_{3}_{4}'
+- - system\.interconnect\.(l1d|l1i|l2|l3)(cache)?\.?(\d+)?\.(\w+)\.(\w+)\.(\w+)
+  - - 'classic_{0}_{2}_{3}_{4}_{5}'

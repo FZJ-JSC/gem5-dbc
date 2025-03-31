@@ -8,10 +8,12 @@ echo "START WORK"
 {benchmark_env}
 
 SVE_SYS_VEC_LEN=/proc/sys/abi/sve_default_vector_length
-if [ -f "$SVE_SYS_VEC_LEN" ]; then
-    echo "$SVE_VEC_LEN" > $SVE_SYS_VEC_LEN
-    printf "$SVE_SYS_VEC_LEN "
-    cat $SVE_SYS_VEC_LEN
+if [ -n "$SVE_VEC_LEN" ]; then
+    if [ -f "$SVE_SYS_VEC_LEN" ]; then
+        echo "$SVE_VEC_LEN" > $SVE_SYS_VEC_LEN
+        printf "$SVE_SYS_VEC_LEN "
+        cat $SVE_SYS_VEC_LEN
+    fi
 fi
 
 export
