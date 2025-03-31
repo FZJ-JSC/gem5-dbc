@@ -1,0 +1,33 @@
+# 1x Link per VNET
+mesh_vnet_support: [[0],[1],[2],[3]]
+node_vnet_support: [[0],[1],[2],[3]]
+# 3x3 2D mesh topology
+#
+# [6] - [7] - [8]
+#  |     |     |
+# [3] - [4] - [5]
+#  |     |     |
+# [0] - [1] - [2]
+#
+topology:
+  model: Simple2D
+  parameters:
+    num_mesh_routers: 9
+    cpu_routers: [[1,2,4,5]]
+    slc_routers: [[1,2,4,5]]
+    mem_routers: [[0,3,7,8]]
+    rom_routers: [6]
+    dma_routers: [6]
+    internal_links:
+      - [0, 1, 1]
+      - [1, 2, 1]
+      - [3, 4, 1]
+      - [4, 5, 1]
+      - [6, 7, 1]
+      - [7, 8, 1]
+      - [0, 3, 2]
+      - [1, 4, 2]
+      - [2, 5, 2]
+      - [3, 6, 2]
+      - [4, 7, 2]
+      - [5, 8, 2]

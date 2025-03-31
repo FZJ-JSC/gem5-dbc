@@ -1,18 +1,20 @@
-# Example configuration with DDR4
+# Example configuration
 
 system:
+  architecture: arm64
   num_cpus: 2
   clock: 2.6GHz
   cpu_clock: 2.6GHz
   voltage: 1.0V
   platform: VExpress_GEM5_V2
-  sve_vl: 256
   interconnect: garnet
   topology: simple
+  sve_vl: 256
   cache_line_size: 64
   cpus:
     - simple
     - arm
+  fs_mode: true
 
 bpred:
   BiMode:
@@ -44,8 +46,11 @@ memory:
   controller:
     number_of_TBEs: 256
   regions:
-    - model: DRAM
-      dram_settings: !include memory/DDR4_2400_16x4.yaml
+    - model: Simple
+      size: 1GB
+      channels: 2
+      bandwidth: "60GiB/s"
+      latency: "5ns"
 caches:
   L1I:
     size: 64kB
@@ -211,5 +216,6 @@ interconnect:
     link_bandwidth: 64
 
 simulation:
+  gem5_version: "24.1.0.1"
   full_system: True
   max_seconds: 600.0

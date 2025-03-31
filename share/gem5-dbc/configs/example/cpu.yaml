@@ -1,0 +1,174 @@
+model: Arm
+clock: 2.6GHz
+bpred:
+  model: Tournament
+  settings:
+    globalPredictorSize: 8192
+    globalCtrBits: 2
+    choicePredictorSize: 8192
+    choiceCtrBits: 2
+    localPredictorSize: 2048
+    localHistoryTableSize: 2048
+  BTB:
+    numEntries: 4096
+    tagBits: 16
+    instShiftAmt: 2
+
+FU:
+  Single_Int:
+    count: 1
+    ops:
+      - [IntAlu, 1]
+  Multi_Int:
+    count: 1
+    ops:
+      - [IntAlu, 1]
+      - [IntMult, 2]
+      - [IntDiv, 9, false]
+      - [IprAccess, 1]
+  FP:
+    count: 1
+    ops:
+      - [FloatAdd, 2]
+      - [FloatCmp, 2]
+      - [FloatCvt, 3]
+      - [FloatMisc, 3]
+      - [FloatMult, 3]
+      - [FloatMultAcc, 4]
+      - [FloatDiv, 11, false]
+      - [FloatSqrt, 12, false]
+
+  SIMD_FP:
+    count: 1
+    ops:
+      - [SimdAdd, 2]
+      - [SimdAddAcc, 4]
+      - [SimdAlu, 2]
+      - [SimdCmp, 2]
+      - [SimdCvt, 3]
+      - [SimdMisc, 2]
+      - [SimdMult, 4]
+      - [SimdMultAcc, 4]
+      - [SimdShift, 2]
+      - [SimdShiftAcc, 4]
+      - [SimdDiv, 9, false]
+      - [SimdSqrt, 9, false]
+      - [SimdFloatAdd, 2]
+      - [SimdFloatAlu, 2]
+      - [SimdFloatCmp, 2]
+      - [SimdFloatCvt, 3]
+      - [SimdFloatDiv, 11, false]
+      - [SimdFloatMisc, 2]
+      - [SimdFloatMult, 4]
+      - [SimdFloatMultAcc, 4]
+      - [SimdFloatMatMultAcc, 4]
+      - [SimdFloatSqrt, 12, false]
+      - [SimdReduceAdd, 10]
+      - [SimdReduceAlu, 12]
+      - [SimdReduceCmp, 9]
+      - [SimdFloatReduceAdd, 8, false]
+      - [SimdFloatReduceCmp, 9]
+      - [SimdExt]
+      - [SimdFloatExt]
+      - [SimdConfig]
+      - [SimdAes]
+      - [SimdAesMix]
+      - [SimdSha1Hash]
+      - [SimdSha1Hash2]
+      - [SimdSha256Hash]
+      - [SimdSha256Hash2]
+      - [SimdShaSigma2]
+      - [SimdShaSigma3]
+      - [FloatAdd, 2]
+      - [FloatCmp, 2]
+      - [FloatCvt, 3]
+      - [FloatMisc, 3]
+      - [FloatMult, 3]
+      - [FloatMultAcc, 4]
+      - [FloatDiv, 11, false]
+      - [FloatSqrt, 12, false]
+  Load:
+    count: 1
+    ops:
+      - [MemRead]
+      - [FloatMemRead]
+  Store:
+    count: 1
+    ops:
+      - [MemWrite]
+      - [FloatMemWrite]
+
+  PredALU:
+    count: 2
+    ops:
+      - [SimdPredAlu]
+
+  Matrix_Unit:
+    count: 1
+    ops:
+      - [Matrix]
+      - [MatrixMov]
+      - [MatrixOP]
+
+core:
+  fetchToDecodeDelay: 1
+  decodeToFetchDelay: 1
+  decodeToRenameDelay: 1
+  renameToDecodeDelay: 1
+  renameToFetchDelay: 1
+  renameToIEWDelay: 1
+  renameToROBDelay: 1
+  iewToCommitDelay: 1
+  iewToDecodeDelay: 1
+  iewToFetchDelay: 1
+  iewToRenameDelay: 1
+  issueToExecuteDelay: 1
+  commitToDecodeDelay: 1
+  commitToFetchDelay: 1
+  commitToIEWDelay: 1
+  commitToRenameDelay: 1
+
+  fetchWidth: 8
+  decodeWidth: 8
+  renameWidth: 8
+  dispatchWidth: 8
+  issueWidth: 8
+  wbWidth: 8
+  commitWidth: 8
+  squashWidth: 8
+
+  numRobs: 1
+  numROBEntries: 128
+  numIQEntries: 128
+  LQEntries: 128
+  SQEntries: 128
+
+  LSQDepCheckShift: 0
+  LSQCheckLoads: true
+  store_set_clear_period: 250000
+
+  LFSTSize: 1024
+  SSITSize: 1024
+
+  cacheLoadPorts: 200
+  cacheStorePorts: 200
+
+  fetchBufferSize: 64
+  fetchQueueSize: 64
+
+  fetchTrapLatency: 1
+  trapLatency: 13
+
+  backComSize: 32
+  forwardComSize: 32
+
+  numPhysIntRegs: 128
+  numPhysFloatRegs: 128
+  # numPhysIntRegs * 5
+  numPhysVecRegs: 128
+  numPhysVecPredRegs: 64
+  numPhysMatRegs: 2
+  numPhysCCRegs: 1280
+
+  needsTSO: false
+
