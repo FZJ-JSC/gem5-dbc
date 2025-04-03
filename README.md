@@ -15,17 +15,19 @@ templates for building all needed binaries.
 For more details, see [artifacts/README.md](artifacts/README.md).
 
 After succesful building of all binary artifacts,
-an index file `artifacts.yaml` is generated containing
+an index file `index.yaml` is generated containing
 binary metadata and checksum information.
 
 ## Install gem5-dbc
+
+Install gem5-dbc directly from the git repo
 
 ```bash
 # Install gem5-dbc package locally
 pip install --user git+https://github.com/FZJ-JSC/gem5-dbc.git@develop
 
 # Configure gem5 binary
-g5dbc --configure GEM5 gem5/build/ARM/gem5.opt
+g5dbc --resource-add GEM5 gem5/build/ARM/gem5.fast
 ```
 
 ## Simulation Workflow
@@ -51,7 +53,7 @@ Once the initial configuration and AbstractBenchmark implementation is defined,
 ```bash
 # Generate simulation scripts for stream benchmark and example architecture configuration
 # Include $ARTIFACTS directory containing artifacts.yaml index
-g5dbc --generate stream example-2CPUs-garnet-Simple --artifacts-dir $ARTIFACTS
+g5dbc --generate stream example/garnet-DDR4 --artifacts-dir $G5DBC_IMAGES/artifacts
 ```
 
 ### Benchmark results evaluation
