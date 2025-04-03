@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gem5-dbc"
-version = "0.11.1"
+version = "0.21.1"
 authors = [
   { name="Carlos Falquez", email="c.falquez@fz-juelich.de" },
 ]
@@ -12,6 +12,7 @@ authors = [
 dependencies = [
   "platformdirs",
   "pyyaml>=6.0",
+  "jsonschema>=4.23"
 ]
 
 description = "gem5 declarative benchmark configuration"
