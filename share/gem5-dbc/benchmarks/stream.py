@@ -34,7 +34,7 @@ class stream(AbstractBenchmark):
             reps=[5],
         )
 
-    def filter_varparams(self, conf: Config, params: dict) -> bool:
+    def filter_varparams(self, params: dict) -> bool:
         """Return True if configuration is valid
 
         Args:
@@ -47,7 +47,7 @@ class stream(AbstractBenchmark):
 
         return True
 
-    def get_config(self, conf: Config, params: dict) -> Config:
+    def update_config(self, params: dict, conf: Config) -> Config:
         """Update configuration based on given parameters
 
         Args:
