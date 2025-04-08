@@ -36,14 +36,33 @@ class ExtLoader(yaml.Loader, metaclass=ExtLoaderMeta):
                 return "".join(f.readlines())
 
 
-def load(file: Path) -> dict:
-    with file.open("r") as stream:
-        data = yaml.load(stream, Loader=ExtLoader)
+def read(file: Path) -> dict:
+    """
+    Read YAML file to Python dict
+    Support file import using `!include` tag
 
+
+    Args:
+        file (Path): YAML file path
+
+    Returns:
+        dict: YAML file contents as Python dict
+    """
+    with file.open("r", encoding="UTF-8") as stream:
+        data = yaml.load(stream, Loader=ExtLoader)
     return data
 
 
-def write(file: Path, data: dict):
-    with file.open("w", encoding="utf-8", newline="") as stream:
+def write(file: Path, data: dict) -> dict:
+    """Write Python dict to YAML file
+
+    Args:
+        file (Path): YAML file path
+        data (dict): Python dict
+
+    Returns:
+        dict: Python dict
+    """
+    with file.open("w", encoding="UTF-8", newline="") as stream:
         yaml.dump(data, stream, default_flow_style=False)
     return data
