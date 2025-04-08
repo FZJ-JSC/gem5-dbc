@@ -1,33 +1,37 @@
 import argparse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-from ..util.filesystem import find_file
+from ..util import files
 from .artifact_db import artifact_db_read
 
 
 @dataclass
 class Options:
-    resource_add: list[str]
-    resource_delete: list[str]
-    generate: list[Path]
-    parse: list[Path]
-    validate: Path
-    config_dir: Path
+    resource_add: str
+    resource_delete: str
+    resource_type: str
+    resource_version: str
+    resource_metadata: str
+    resource_arch: str
+    generate: str
+    config_file: str
+    parse: str
+    evaluate: str
+    validate: bool
     benchmark_dir: Path
     user_conf_dir: Path
     user_data_dir: Path
     artifacts_dir: Path
     workspace_dir: Path
-    config_output: str
-    parser_output: str
+    config_dir: Path
+    generated_dir: str
+    parsed_dir: str
     parser_format: str
     nprocs: int
     command: str
     artifacts: dict
-    resource_version: str | None
-    resource_metadata: str | None
-    resource_arch: str | None
+    file_args: list[Path]
 
     @classmethod
     def parse_from_args(cls, user_conf_dir: str, user_data_dir: str):
@@ -40,58 +44,79 @@ class Options:
         parser.add_argument(
             "--resource-add",
             type=str,
-            default=None,
-            nargs=2,
+            default="",
             help="Add path object to simulation resource index",
-            metavar=("type", "path"),
+            metavar="path",
         )
         parser.add_argument(
             "--resource-delete",
             type=str,
-            default=None,
-            nargs=1,
+            default="",
             help="Remove path object from resource index",
-            metavar=("path"),
+            metavar="path",
+        )
+        parser.add_argument(
+            "--resource-type",
+            type=str,
+            default="",
+            help="Simulation resource version",
         )
         parser.add_argument(
             "--resource-version",
             type=str,
-            default=None,
+            default="",
             help="Simulation resource version",
         )
         parser.add_argument(
             "--resource-metadata",
             type=str,
-            default=None,
+            default="",
             help="Simulation resource metadata",
         )
         parser.add_argument(
             "--resource-arch",
             type=str,
-            default=None,
+            default="",
             help="Corresponding architecture of simulation resource to be added",
         )
         parser.add_argument(
             "--generate",
             type=str,
-            default=None,
-            nargs=2,
-            help="Generate simulation scripts",
-            metavar=("benchmark", "configuration"),
+            default="",
+            help="Generate simulation scripts for benchmark",
+            metavar="benchmark",
+        )
+        parser.add_argument(
+            "--config-file",
+            type=str,
+            default="",
+            help="Initial configuration for benchmark generation",
+            metavar="configuration.yaml",
         )
         parser.add_argument(
             "--parse",
             type=str,
-            default=None,
-            nargs=1,
-            help="Parse simulation results",
+            default="",
+            help="Parse simulation results in directory",
+            metavar="benchmark_dir",
+        )
+        parser.add_argument(
+            "--evaluate",
+            type=str,
+            default="",
+            help="Evaluate parsed simulation statistics after parsing directory",
             metavar="benchmark_dir",
         )
         parser.add_argument(
             "--validate",
+            action="store_true",
+            help="Validate configuration file",
+        )
+        parser.add_argument(
+            "--benchmark-dir",
             type=str,
             default=None,
-            help="User Configuration to validate",
+            help="Directory to search for benchmark Python modules",
         )
         parser.add_argument(
             "--user-conf-dir",
@@ -106,18 +131,6 @@ class Options:
             help="User Data Directory containing templates and parser subdirectories",
         )
         parser.add_argument(
-            "--config-dir",
-            type=str,
-            default=None,
-            help="Directory to search for architecture configuration files",
-        )
-        parser.add_argument(
-            "--benchmark-dir",
-            type=str,
-            default=None,
-            help="Directory to search for benchmark python modules",
-        )
-        parser.add_argument(
             "--artifacts-dir",
             type=str,
             default=None,
@@ -130,13 +143,19 @@ class Options:
             help="Workspace Directory",
         )
         parser.add_argument(
-            "--config-output",
+            "--config-dir",
             type=str,
-            default="config",
+            default=None,
+            help="Directory to search for architecture configuration files",
+        )
+        parser.add_argument(
+            "--generated-dir",
+            type=str,
+            default="work",
             help="Generated configuration output directory",
         )
         parser.add_argument(
-            "--parser-output",
+            "--parsed-dir",
             type=str,
             default="parsed",
             help="Parsed results output directory",
@@ -187,54 +206,92 @@ class Options:
 
         command = ""
         artifacts = dict()
+        file_args: list[Path] = []
         if args.resource_add:
+            if args.resource_type == "":
+                raise SystemExit(f"Please specify artifact resource type.")
             command = "resource_add"
+            file_args.append(Path(args.resource_add))
         elif args.resource_delete:
             command = "resource_del"
+            file_args.append(Path(args.resource_del))
         elif args.generate:
+            if args.config_file == "":
+                raise SystemExit(f"Please specify initial configuration file.")
             command = "generate"
+            if (
+                _path := files.find(
+                    args.generate,
+                    work_dir,
+                    args.workspace_dir,
+                    args.benchmark_dir,
+                    args.user_data_dir.joinpath("benchmarks"),
+                    main="main",
+                    ext="py",
+                )
+            ) is None:
+                raise SystemExit(f"Could not find module {args.generate}.")
+            file_args.append(_path)
+            if (
+                _path := files.find(
+                    args.config_file,
+                    work_dir,
+                    args.workspace_dir,
+                    args.config_dir,
+                    args.user_data_dir.joinpath("configs"),
+                    main="index",
+                    ext="yaml",
+                )
+            ) is None:
+                raise SystemExit(f"Could not find configuration {args.config_file}.")
+            file_args.append(_path)
             artifacts = artifact_db_read(artifacts_index)
-            args.generate[0] = find_file(
-                args.generate[0],
-                work_dir,
-                args.workspace_dir,
-                args.benchmark_dir,
-                args.user_data_dir.joinpath("benchmarks"),
-                main="main",
-                ext="py",
-            )
-            args.generate[1] = find_file(
-                args.generate[1],
-                work_dir,
-                args.workspace_dir,
-                args.config_dir,
-                args.user_data_dir.joinpath("configs"),
-                main="index",
-                ext="yaml",
-            )
         elif args.parse:
             command = "parse"
-            args.parse[0] = find_file(
-                args.parse[0],
-                work_dir,
-                main="main",
-                ext="py",
-            )
+            if (
+                _path := files.find(
+                    args.parse,
+                    work_dir,
+                    main="main",
+                    ext="py",
+                )
+            ) is None:
+                raise SystemExit(f"Could not find module {args.parse}.")
+            file_args.append(_path)
+        elif args.evaluate:
+            command = "evaluate"
+            if (
+                _path := files.find(
+                    args.evaluate,
+                    work_dir,
+                    main="main",
+                    ext="py",
+                )
+            ) is None:
+                raise SystemExit(f"Could not find module {args.evaluate}.")
+            file_args.append(_path)
         elif args.validate:
+            if args.config_file == "":
+                raise SystemExit(f"Please specify initial configuration file.")
             command = "validate"
-            args.validate = find_file(
-                args.validate,
-                work_dir,
-                args.workspace_dir,
-                args.config_dir,
-                args.user_data_dir.joinpath("configs"),
-                main="index",
-                ext="yaml",
-            )
+            if (
+                _path := files.find(
+                    args.config_file,
+                    work_dir,
+                    args.workspace_dir,
+                    args.config_dir,
+                    args.user_data_dir.joinpath("configs"),
+                    main="index",
+                    ext="yaml",
+                )
+            ) is None:
+                raise SystemExit(f"Could not find configuration {args.config_file}.")
+            file_args.append(_path)
 
         opts = cls(
             command=command,
             artifacts=artifacts,
+            file_args=file_args,
             **vars(args),
         )
 

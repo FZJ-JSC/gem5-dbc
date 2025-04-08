@@ -3,6 +3,7 @@ from platformdirs import user_config_dir, user_data_dir
 from .manager import (
     Options,
     configure_resources,
+    evaluate_results,
     generate_workload,
     parse_workload,
     validate_config,
@@ -16,15 +17,17 @@ def main():
     # Match command
     match options.command:
         case "resource_add":
-            configure_resources("add", options)
+            configure_resources(options, *options.file_args)
         case "resource_del":
-            configure_resources("del", options)
+            configure_resources(options, *options.file_args)
         case "generate":
-            generate_workload(options)
+            generate_workload(options, *options.file_args)
         case "parse":
-            parse_workload(options)
+            parse_workload(options, *options.file_args)
+        case "evaluate":
+            evaluate_results(options, *options.file_args)
         case "validate":
-            validate_config(options)
+            validate_config(options, *options.file_args)
         case _:
             print("Please specify a command to execute. Use --help for more details.")
 

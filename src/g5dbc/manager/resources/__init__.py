@@ -1,76 +1,84 @@
 import re
 from pathlib import Path
 
-from ...util.hash import md5sum
+from ...util import files
 from ..artifact_db import artifact_db_add, artifact_db_delete
 from ..options import Options
 from .simulator import get_resource_simulator
 
 
 def get_default_resource(
-    path: Path,
-    _type: str,
-    arch: str | None = None,
-    version: str | None = None,
-    metadata: str | None = None,
+    r_path: Path,
+    r_type: str,
+    r_arch: str = "",
+    r_version: str = "",
+    r_meta: str = "",
 ) -> tuple[str, dict[str, str]]:
 
-    if not path.is_file():
-        raise SystemExit(f"Artifact path does not exist: {path}")
+    if not r_path.is_file():
+        raise SystemExit(f"Artifact path does not exist: {r_path}.")
 
-    if _type not in ["KERNEL", "DISK", "BOOT"]:
-        raise SystemExit(f"Artifact type {_type} invalid.")
+    if r_type not in ["KERNEL", "DISK", "BOOT"]:
+        raise SystemExit(f"Unknown artifact type {r_type}.")
 
-    if arch is None:
-        raise SystemExit(f"Artifact architecture unknown")
+    if r_arch == "":
+        raise SystemExit(f"Unknown artifact architecture {r_arch}.")
 
-    _name = path.name
-    _path = str(path.absolute())
-    _hash = md5sum(path)
-    _ver = version if version is not None else ""
-    _meta = metadata if metadata is not None else ""
-
+    r_name = r_path.name
     # Try to get version from name
-    r_name = r"([\w\.]+)-([\w\.-]+)"
-    if m := re.fullmatch(r_name, path.name):
-        _name = m[1]
-        _ver = m[2]
+    if m := re.fullmatch(r"([\w\.]+)-([\w\.-]+)", r_path.name):
+        r_name = m[1]
+        r_version = m[2]
 
     entry = dict(
-        bintype=_type,
-        name=_name,
-        path=_path,
-        md5hash=_hash,
-        version=_ver,
-        metadata=_meta,
+        bintype=r_type,
+        name=r_name,
+        path=str(r_path.absolute()),
+        md5hash=files.hash_md5(r_path),
+        version=r_version,
+        metadata=r_meta,
     )
 
-    return arch, entry
+    return r_arch, entry
 
 
-def configure_resources(cmd: str, opts: Options):
+def configure_resources(opts: Options, path: Path | None = None):
+    """Configure simulation resources
+
+    Args:
+        opts (Options): Command line options
+        path (Path | None, optional): Path to artifact resource. Defaults to None.
+
+    Raises:
+        SystemExit: If resource could not be configured due to missing information.
+    """
     # Create user conf directory if it does not already exist
     opts.user_conf_dir.mkdir(parents=True, exist_ok=True)
     index_file = opts.user_conf_dir.joinpath("artifacts.yaml")
 
-    match cmd:
+    match opts.command:
         case "add":
-            _type = opts.resource_add[0]
-            _path = Path(opts.resource_add[1])
-
-            match _type:
+            match opts.resource_type:
                 case "GEM5":
-                    arch, item = get_resource_simulator(_path)
+                    if path is None:
+                        raise SystemExit(f"Please specify path of gem5 binary.")
+                    arch, item = get_resource_simulator(path)
                 case _:
+                    if path is None:
+                        raise SystemExit(f"Please specify path of artifact.")
                     arch, item = get_default_resource(
-                        _path,
-                        _type,
-                        arch=opts.resource_arch,
-                        version=opts.resource_version,
-                        metadata=opts.resource_metadata,
+                        r_path=path,
+                        r_type=opts.resource_type,
+                        r_arch=opts.resource_arch,
+                        r_version=opts.resource_version,
+                        r_meta=opts.resource_metadata,
                     )
             artifact_db_add(index_file, arch, item)
         case "del":
-            artifact_db_delete(index_file, opts.resource_del[0])
+            if path is None:
+                raise SystemExit(
+                    f"Please specify path of artifact to be removed from database."
+                )
+            artifact_db_delete(index_file, path)
         case _:
-            raise SystemExit(f"Resource verb unknown")
+            raise SystemExit(f"Resource verb {opts.command} unknown.")

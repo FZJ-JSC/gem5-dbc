@@ -1,30 +1,44 @@
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Generic, TypeVar
 
 from ..config import Config
 from ..util import iterate
 
+T = TypeVar("T")
 
-class AbstractBenchmark(ABC):
+
+class AbstractBenchmark(ABC, Generic[T]):
     """
     Abstract Benchmark
     """
 
-    def get_name(self) -> str:
-        """
-        Get benchmark name
-        """
-        return self.__class__.__name__
+    def __init__(
+        self,
+        workspace_dir: Path,
+        user_data_dir: Path,
+        generated_dir="work",
+        parsed_dir="parsed",
+    ):
+        self.workspace_dir = workspace_dir
+        self.user_data_dir = user_data_dir
+        self.generated_dir = workspace_dir.joinpath(self.name, generated_dir)
+        self.parsed_dir = workspace_dir.joinpath(self.name, parsed_dir)
+
+    @staticmethod
+    @abstractmethod
+    def P(p: dict) -> T:
+        """ """
 
     @abstractmethod
-    def get_command(self, config: Config) -> str:
+    def get_command(self, params: T, config: Config) -> str:
         """
         Get benchmark command
         """
 
     @abstractmethod
-    def get_env(self, config: Config) -> dict:
+    def get_env(self, params: T, config: Config) -> dict:
         """
         Get benchmark environment variables
         """
@@ -36,18 +50,61 @@ class AbstractBenchmark(ABC):
         """
 
     @abstractmethod
-    def filter_varparams(self, params: dict) -> bool:
+    def filter_varparams(self, params: T) -> bool:
         """
         Filter Config
         """
 
     @abstractmethod
-    def update_config(self, params: dict, config: Config) -> Config:
+    def update_config(self, params: T, config: Config) -> Config:
         """
         Update Config
         """
 
-    def parse_config(self, config: Config) -> dict:
+    @abstractmethod
+    def get_data_rows(self, params: T, stats: dict) -> dict | list[dict]:
+        """
+        Get data rows
+        """
+
+    @property
+    def name(self):
+        """
+        Benchmark name
+        """
+        return self.__class__.__name__
+
+    def get_bench_command(self, config: Config) -> str:
+        """
+        Update Config
+        """
+        return self.get_command(self.P(**config.parameters), config)
+
+    def get_env_vars(self, config: Config) -> dict:
+        """
+        Update Config
+        """
+        return self.get_env(self.P(**config.parameters), config)
+
+    def get_parameter_list(self, config: Config) -> list[dict]:
+        """
+        Get filtered parameter list
+        """
+        parameters = [
+            p
+            for p in iterate(self.get_varparams())
+            if self.filter_varparams(self.P(**p))
+        ]
+        assert len(parameters) > 0
+        return parameters
+
+    def get_updated_config(self, config: Config) -> Config:
+        """
+        Update Config
+        """
+        return self.update_config(self.P(**config.parameters), config)
+
+    def get_column_keys(self, config: Config) -> dict:
         """
         Return dictionary for parsed parameter columns
         """
@@ -55,15 +112,21 @@ class AbstractBenchmark(ABC):
 
         return params_dict
 
-    def get_parameter_list(self, config: Config) -> list[dict]:
-        """
-        Get filtered parameter list
-        """
-        parameters = [
-            p for p in iterate(self.get_varparams()) if self.filter_varparams(p)
-        ]
-        assert len(parameters) > 0
-        return parameters
+    def get_data_rows_from_stats(self, stats: dict) -> list[dict]:
+        params = dict([(k, stats[k]) for k in self.get_varparams().keys()])
+        r = self.get_data_rows(self.P(**params), stats)
+        if isinstance(r, dict):
+            r = [r]
+        for e in r:
+            e.update(
+                dict(
+                    bench_name=stats["bench_name"],
+                    bench_id=stats["bench_id"],
+                    roi_id=stats["roi_id"],
+                    **params,
+                )
+            )
+        return r
 
     def parse_output_log(self, output_file: Path) -> dict:
         if not output_file.exists():

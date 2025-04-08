@@ -2,7 +2,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from ...util.hash import md5sum
+from ...util import files
 
 
 def get_resource_simulator(path: Path) -> tuple[str, dict[str, str]]:
@@ -14,9 +14,9 @@ def get_resource_simulator(path: Path) -> tuple[str, dict[str, str]]:
 
     _name = path.name
     _path = str(path.absolute())
-    _hash = md5sum(path)
-    _ver = None
-    _meta = None
+    _hash = files.hash_md5(path)
+    _ver = ""
+    _meta = ""
 
     outp = subprocess.run([str(path), "-B"], capture_output=True)
     outl = outp.stdout.decode().splitlines()
@@ -43,7 +43,7 @@ def get_resource_simulator(path: Path) -> tuple[str, dict[str, str]]:
     if arch is None:
         raise SystemExit(f"Could not determine gem5 isa: {path}")
 
-    entry = dict(
+    entry: dict[str, str] = dict(
         bintype="GEM5",
         name=_name,
         path=_path,

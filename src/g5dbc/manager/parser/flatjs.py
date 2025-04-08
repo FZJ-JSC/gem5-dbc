@@ -4,7 +4,7 @@ from . import StatsParser
 
 class FlatJS(StatsParser):
 
-    def update_column(self, r: dict, c: str, key, val) -> dict:
+    def update_column(self, r: dict, c: str, key: str, val) -> dict:
         scalar_keys = [
             "total",
             "samples",
@@ -28,7 +28,7 @@ class FlatJS(StatsParser):
         list_keys = ["selected"]
 
         try:
-            if key is None:
+            if key == "":
                 r[c] = val + r.get(c, 0)
             elif key in scalar_keys:
                 c = f"{c}_{key}"

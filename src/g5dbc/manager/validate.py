@@ -1,25 +1,24 @@
-import json
+from pathlib import Path
 
 from jsonschema import validate
-from jsonschema.validators import Draft202012Validator
 
-from ..util import yaml_dict
-from .config_file import read_config_file, write_config_file
+from ..util import dict_json, dict_yaml
 from .options import Options
 
 
-def validate_config(opts: Options) -> int:
+def validate_config(opts: Options, path_cfg: Path):
+    """Validate configuration file
 
-    config_file = opts.validate
-
-    print(f"validate {config_file}")
-    config_dict = yaml_dict.load(config_file)
+    Args:
+        opts (Options): Command line options
+        path_cfg (Path): Configuration file to validate
+    """
 
     schema_file = opts.user_data_dir.joinpath("schema.json")
 
-    with schema_file.open("r", encoding="UTF-8") as stream:
-        schema_dict = json.load(stream)
+    print(f"Validating {path_cfg}")
 
-    validate(instance=config_dict, schema=schema_dict)
-    # Read default benchmark configuration
-    # config = read_config_file(config_path)
+    validate(
+        instance=dict_yaml.read(path_cfg),
+        schema=dict_json.read(schema_file),
+    )
