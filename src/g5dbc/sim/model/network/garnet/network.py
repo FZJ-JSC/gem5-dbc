@@ -5,7 +5,7 @@ from g5dbc.sim.m5_objects.ruby.network import (
 )
 from g5dbc.sim.model.interconnect.ruby.node import AbstractNode
 from g5dbc.sim.model.topology import AbstractTopology
-from g5dbc.sim.model.topology.spec import LinkSpec, NodeSpec, RouterSpec
+from g5dbc.sim.model.topology.spec import LinkSpec
 
 from ...network.AbstractNetwork import AbstractNetwork
 from ...network.NetworkLink import NetworkLink
@@ -27,7 +27,7 @@ class Garnet_Network(m5_GarnetNetwork, AbstractNetwork):
         self._int_links: list[NetworkLink] = []
         self._ext_links: list[NetworkLink] = []
 
-    def initialize(self, topology: AbstractTopology) -> list[NetworkRouter]:
+    def initialize(self, topology: AbstractTopology) -> None:
         """
         Create network routers based on topology
         """

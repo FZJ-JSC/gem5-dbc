@@ -198,8 +198,8 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         return self
 
-    def connect_memory(self, mem_ctrls: AbstractMemSystem) -> AbstractBoardSystem:
-        self.mem_ctrls = mem_ctrls
+    def connect_memory(self, memory: AbstractMemSystem) -> AbstractBoardSystem:
+        self.mem_ctrls = memory
 
         # Set memory ranges
         self.mem_ctrls.set_memory_ranges(self.mem_ranges)
@@ -249,16 +249,16 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         return self.cpus
 
     def get_board_memories(self) -> list[m5_SimpleMemory]:
-
         bootmem = self.realview.get_bootmem()
+        on_chip_mem_ports = getattr(self, "_on_chip_mem_ports", None)
+        sram = getattr(self, "sram", None)
 
         # other memories
         other_memories: list[m5_SimpleMemory] = []
         if bootmem:
             other_memories.append(bootmem)
-        if getattr(self, "sram", None):
-            other_memories.append(getattr(self, "sram", None))
-        on_chip_mem_ports = getattr(self, "_on_chip_mem_ports", None)
+        if sram:
+            other_memories.append(sram)
         if on_chip_mem_ports:
             other_memories.extend([p.simobj for p in on_chip_mem_ports])
 

@@ -8,12 +8,25 @@ class BPredFactory:
         if conf is None:
             return None
         bpred = None
-        btb = m5_SimpleBTB(**conf.BTB.to_dict())
         match conf.model:
             case "BiMode":
-                bpred = m5_BiModeBP(btb=btb, **conf.settings)
+                bpred = m5_BiModeBP(
+                    btb=m5_SimpleBTB(**conf.BTB.to_dict()),
+                    **{
+                        k: v
+                        for k, v in conf.settings.items()
+                        if hasattr(m5_BiModeBP, k)
+                    },
+                )
             case "Tournament":
-                bpred = m5_TournamentBP(btb=btb, **conf.settings)
+                bpred = m5_TournamentBP(
+                    btb=m5_SimpleBTB(**conf.BTB.to_dict()),
+                    **{
+                        k: v
+                        for k, v in conf.settings.items()
+                        if hasattr(m5_TournamentBP, k)
+                    },
+                )
             case _:
                 raise ValueError(f"BP model {conf.model} not available")
 

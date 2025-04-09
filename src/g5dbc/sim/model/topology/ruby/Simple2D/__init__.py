@@ -122,17 +122,17 @@ class Simple2D(RubyTopology):
 
         return specs
 
-    def get_rom_routers(self) -> RouterSpec:
+    def get_rom_routers(self) -> list[RouterSpec]:
         config_topo = self.config_topo
         router_ids = config_topo.rom_routers
         routers = RouterSpec(router_ids=router_ids)
-        return routers
+        return [routers]
 
-    def get_dma_routers(self) -> RouterSpec:
+    def get_dma_routers(self) -> list[RouterSpec]:
         config_topo = self.config_topo
         router_ids = config_topo.dma_routers
         routers = RouterSpec(router_ids=router_ids)
-        return routers
+        return [routers]
 
     def mesh_links(self) -> list[LinkSpec]:
         config_topo = self.config_topo

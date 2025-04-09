@@ -20,11 +20,11 @@ class MemCtrlFactory:
                 _attr,
             )
 
-            mem_ctrls = [
-                DRAM_Ctrl(config, ctrl_id) for ctrl_id in range(config.channels)
+            mem_ctrls: list[AbstractMemCtrl] = [
+                DRAM_Ctrl(dram=_dram_cls(), ctrl_id=ctrl_id, numa_id=config.numa_id)
+                for ctrl_id in range(config.channels)
             ]
-            for ctrl in mem_ctrls:
-                ctrl.set_dram_interface(dram=_dram_cls())
+
         else:
             mem_ctrls = [
                 SimpleMainMemory(config, ctrl_id) for ctrl_id in range(config.channels)

@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from ..spec import NodeType, NodeSpec, RouterSpec
 from ..AbstractTopology import AbstractTopology
+from ..spec import NodeSpec, NodeType, RouterSpec
+
 
 class RubyTopology(AbstractTopology):
     """
@@ -11,13 +12,21 @@ class RubyTopology(AbstractTopology):
 
     @abstractmethod
     def get_router_numa_ids(self) -> list[int]:
-        """
-        Get a map router_id -> numa_id
+        """Get a map router_id -> numa_id
+
+        Returns:
+            list[int]: A map router_id -> numa_id
         """
 
     @abstractmethod
     def get_routers(self, node_type: NodeType) -> list[RouterSpec]:
-        """
+        """Get a list of router specs for a given node type
+
+        Args:
+            node_type (NodeType): Type of Node
+
+        Returns:
+            list[RouterSpec]: List of router specs
         """
 
     def get_nodes(self, node_type: NodeType) -> list[NodeSpec]:
@@ -60,23 +69,31 @@ class RubyTopology(AbstractTopology):
 
     def get_rom_nodes(self) -> list[NodeSpec]:
         specs = self.get_routers(NodeType.ROM)
-        nodes = [NodeSpec(router_id=router_id) for router_id in specs.router_ids]
+        nodes = [NodeSpec(router_id=router_id) for router_id in specs[0].router_ids]
         return nodes
-    
+
     def get_dma_nodes(self) -> list[NodeSpec]:
         specs = self.get_routers(NodeType.DMA)
-        nodes = [NodeSpec(router_id=router_id) for router_id in specs.router_ids]
+        nodes = [NodeSpec(router_id=router_id) for router_id in specs[0].router_ids]
         return nodes
 
-    def get_ctrl_nodes(self, id_map: Callable[[int,RouterSpec], int], specs: list[RouterSpec]) -> list[NodeSpec]:
+    def get_ctrl_nodes(
+        self,
+        id_map: Callable[[int, RouterSpec], int],
+        specs: list[RouterSpec],
+    ) -> list[NodeSpec]:
         numa_ids = self.get_router_numa_ids()
-        nodes : list[NodeSpec] = []
-        for numa_id,spec in enumerate(specs):
+        nodes: list[NodeSpec] = []
+        for numa_id, spec in enumerate(specs):
             for ctrl_id in range(spec.num_ctrls()):
                 router_id = id_map(ctrl_id, spec)
-                assert numa_id == numa_ids[router_id], f"router_id={router_id} numa_id={numa_id} numa_ids={numa_ids}"
-                nodes.append(NodeSpec(ctrl_id=ctrl_id,router_id=router_id,numa_id=numa_id))
+                assert (
+                    numa_id == numa_ids[router_id]
+                ), f"router_id={router_id} numa_id={numa_id} numa_ids={numa_ids}"
+                nodes.append(
+                    NodeSpec(ctrl_id=ctrl_id, router_id=router_id, numa_id=numa_id)
+                )
 
         nodes.sort()
-        
+
         return nodes

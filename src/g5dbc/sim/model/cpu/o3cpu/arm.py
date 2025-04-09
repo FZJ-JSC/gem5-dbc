@@ -16,7 +16,7 @@ class AbstractFUPool(m5_FUPool):
         for label, fu in FU.items():
             # Test for supported operations
             if m5_OpClass.is_supported([op.name for op in fu.ops]):
-                _attr = dict(
+                _attr: dict = dict(
                     count=fu.count,
                     opList=[
                         m5_OpDesc(

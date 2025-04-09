@@ -18,7 +18,7 @@ class CoreFUDesc:
             if isinstance(op, dict):
                 self.ops[n] = CoreOpDesc(**op)
             if isinstance(op, list):
-                args = dict(
+                args: dict = dict(
                     name=op[0],
                     latency=1 if len(op) < 2 else op[1],
                     pipelined=True if len(op) < 3 else op[2],

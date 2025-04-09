@@ -120,7 +120,7 @@ class ClassicInterconnect(CoherentInterconnect):
     def connect_rom_nodes(self, mems: list[m5_SimpleMemory]):
         pass
 
-    def connect_dma_nodes(self, mems: list[m5_SimpleMemory]):
+    def connect_dma_nodes(self, ports: list):
         pass
 
     def connect_network(self):

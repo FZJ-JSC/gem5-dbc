@@ -65,7 +65,7 @@ class CoherentInterconnect(m5_SubSystem):
         """
 
     @abstractmethod
-    def connect_dma_nodes(self, mems: list[m5_SimpleMemory]):
+    def connect_dma_nodes(self, ports: list):
         """
         Connect DMA memory to corresponding interconnect controller
         """

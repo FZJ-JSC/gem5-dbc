@@ -1,5 +1,6 @@
 from g5dbc.config import Config
 from g5dbc.sim.m5_objects.ruby.network import m5_SimpleNetwork
+from g5dbc.sim.model.topology import AbstractTopology
 
 from ...network.AbstractNetwork import AbstractNetwork
 from ...network.NetworkLink import NetworkLink
@@ -13,7 +14,7 @@ class Simple_Network(AbstractNetwork, m5_SimpleNetwork):
 
         self._config = config
 
-    def initialize(self) -> None:
+    def initialize(self, topology: AbstractTopology) -> None:
         self.network.setup_buffers()
 
     def set_routers(self, routers: list[NetworkRouter]) -> None:
