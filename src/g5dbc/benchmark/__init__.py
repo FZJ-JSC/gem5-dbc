@@ -28,43 +28,81 @@ class AbstractBenchmark(ABC, Generic[T]):
 
     @staticmethod
     @abstractmethod
-    def P(p: dict) -> T:
-        """ """
+    def P(**kwargs) -> T:
+        """Return instance of benchmark parameter class T
+
+        Args:
+            **kwargs: Parameter class constructor arguments
+
+        Returns:
+            T: Instance of benchmark parameter class
+        """
 
     @abstractmethod
     def get_command(self, params: T, config: Config) -> str:
-        """
-        Get benchmark command
+        """Return command to execute
+
+        Args:
+            params (T): Current parameter combination
+            config (Config): Updated benchmark configuration
+
+        Returns:
+            str: Command to execute as benchmark
         """
 
     @abstractmethod
     def get_env(self, params: T, config: Config) -> dict:
-        """
-        Get benchmark environment variables
+        """Return shell environment for benchmark
+
+        Args:
+            params (T): Current parameter combination
+            config (Config): Updated benchmark configuration
+
+        Returns:
+            dict: Dictionary of environment variables
         """
 
     @abstractmethod
     def get_varparams(self) -> dict[str, list]:
-        """
-        Return iteratable parameters
+        """Return a list of iterateble parameters
+
+        Returns:
+            dict[str, list]: list of iterateble parameters
         """
 
     @abstractmethod
     def filter_varparams(self, params: T) -> bool:
-        """
-        Filter Config
+        """Return True if given parameter combination is valid
+
+        Args:
+            params (T): Current parameter combination
+
+        Returns:
+            bool: Return True if current parameter combination is valid
         """
 
     @abstractmethod
     def update_config(self, params: T, config: Config) -> Config:
-        """
-        Update Config
+        """Update configuration from given parameters
+
+        Args:
+            params (T): Current parameter iteration
+            config (Config): Initial configuration
+
+        Returns:
+            Config: Updated configuration from current parameter iteration
         """
 
     @abstractmethod
     def get_data_rows(self, params: T, stats: dict) -> dict | list[dict]:
-        """
-        Get data rows
+        """Return a single data row or multiple data rows to be written
+
+        Args:
+            params (T): _description_
+            stats (dict): _description_
+
+        Returns:
+            dict | list[dict]: Return single or multiple data rows
         """
 
     @property
