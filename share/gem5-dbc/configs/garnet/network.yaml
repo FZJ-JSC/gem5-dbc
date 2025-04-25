@@ -1,6 +1,12 @@
+# 1x Link for all VNETs
 mesh_vnet_support: [[0,1,2,3]]
 node_vnet_support: [[0,1,2,3]]
-
+# 2x3 2D mesh topology
+#
+# [3] - [4] - [5]
+#  |     |     |
+# [0] - [1] - [2]
+#
 topology:
   model: Simple2D
   parameters:

@@ -1,17 +1,17 @@
 # NeoverseN1 configuration
 # Based on the O3_ARM_Neoverse_N1.py configuration by Bine Brank
 # https://github.com/binebrank/gem5/blob/neoverse_model/configs/common/cores/arm/O3_ARM_Neoverse_N1.py
+simulation:
+  gem5_version: 24.1.0.2
+  full_system: True
 
 system:
   architecture: arm64
-  num_cpus: 2
-  num_slcs: 2
+  num_cpus: 4
+  num_slcs: 4
   clock: 2.6GHz
   sve_vl: 256
   cache_line_size: 64
-  cpus:
-  - simple
-  - o3cpu
 
 cpus:
   simple:
@@ -32,8 +32,4 @@ interconnect:
   model: garnet
 
 network: !include network.yaml
-
-simulation:
-  gem5_version: 24.1.0.2
-  full_system: True
 

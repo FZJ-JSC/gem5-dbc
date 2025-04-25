@@ -1,0 +1,133 @@
+L1I:
+  size: 64KiB
+  assoc: 4
+  latency:
+    tag: 1
+    data: 1
+  sequencer:
+    max_outstanding_requests: 256
+  controller:
+    mandatory_queue_latency: 1
+    alloc_on_seq_acc: True
+    alloc_on_seq_line_write: False
+    send_evictions: Yes
+  classic:
+    mshrs: 16
+    tgts_per_mshr: 16
+    writeback_clean: False
+  prefetcher:
+    model: Stride
+    settings:
+      degree: 2
+
+L1D:
+  size: 64KiB
+  assoc: 4
+  latency: 
+    tag: 1
+    data: 1
+  sequencer:
+    max_outstanding_requests: 256
+  controller:
+    mandatory_queue_latency: 1
+    alloc_on_seq_acc: True
+    alloc_on_seq_line_write: False
+    send_evictions: Yes
+  classic:
+    mshrs: 16
+    tgts_per_mshr: 16
+    writeback_clean: False
+  prefetcher:
+    model: Tagged
+    settings:
+      degree: 2
+
+L2:
+  size: 1MiB
+  assoc: 8
+  latency:
+    tag: 1
+    data: 4
+    response: 4
+  controller:
+    number_of_snoop_TBEs: 128
+    number_of_DVM_TBEs: 1
+    number_of_DVM_snoop_TBEs: 1
+    send_evictions: False
+  classic:
+    mshrs: 32
+    tgts_per_mshr: 16
+    writeback_clean: True
+    clusivity: mostly_incl
+    xbar_width: 64
+  prefetcher:
+    model: Tagged
+    settings:
+      degree: 8
+
+SLC:
+  size: 2MiB
+  assoc: 16
+  system_shared: Yes
+  latency: 
+    tag: 1
+    data: 10
+    response: 10
+  controller:
+    is_HN: True
+    enable_DMT: True
+    enable_DCT: True
+    # MOESI / Mostly inclusive for shared / Exclusive for unique
+    alloc_on_atomic: True
+    alloc_on_readunique: False
+    dealloc_on_unique: True
+    dealloc_backinv_unique: False
+    dealloc_backinv_shared: False
+    send_evictions: False
+    number_of_snoop_TBEs     : 1
+    number_of_DVM_TBEs       : 1
+    number_of_DVM_snoop_TBEs : 1
+  classic:
+    mshrs: 96
+    tgts_per_mshr: 16
+    clusivity: mostly_excl
+    xbar_width: 64
+    snoop_filter_max_capacity: "8MiB"
+
+IWC:
+  size: 8KiB
+  assoc: 4
+  latency: 
+    tag: 1
+    data: 1
+    response: 1
+  classic:
+    mshrs: 20
+    tgts_per_mshr: 12
+    write_buffers: 16
+    writeback_clean: True
+
+DWC:
+  size: 8KiB
+  assoc: 4
+  latency: 
+    tag: 1
+    data: 1
+    response: 1
+  classic:
+    mshrs: 20
+    tgts_per_mshr: 12
+    write_buffers: 16
+    writeback_clean: True
+
+CoherentIO:
+  size: 1kB
+  assoc: 8
+  latency: 
+    tag: 50
+    data: 50
+    response: 50
+  classic:
+    mshrs: 20
+    tgts_per_mshr: 12
+

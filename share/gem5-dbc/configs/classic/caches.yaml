@@ -4,13 +4,6 @@ L1I:
   latency:
     tag: 1
     data: 1
-  sequencer:
-    max_outstanding_requests: 256
-  controller:
-    mandatory_queue_latency: 1
-    alloc_on_seq_acc: True
-    alloc_on_seq_line_write: False
-    send_evictions: Yes
   classic:
     mshrs: 16
     tgts_per_mshr: 16
@@ -26,13 +19,6 @@ L1D:
   latency: 
     tag: 1
     data: 1
-  sequencer:
-    max_outstanding_requests: 256
-  controller:
-    mandatory_queue_latency: 1
-    alloc_on_seq_acc: True
-    alloc_on_seq_line_write: False
-    send_evictions: Yes
   classic:
     mshrs: 16
     tgts_per_mshr: 16
@@ -49,11 +35,6 @@ L2:
     tag: 1
     data: 4
     response: 4
-  controller:
-    number_of_snoop_TBEs: 128
-    number_of_DVM_TBEs: 1
-    number_of_DVM_snoop_TBEs: 1
-    send_evictions: False
   classic:
     mshrs: 32
     tgts_per_mshr: 16
@@ -73,20 +54,6 @@ SLC:
     tag: 1
     data: 10
     response: 10
-  controller:
-    is_HN: True
-    enable_DMT: True
-    enable_DCT: True
-    # MOESI / Mostly inclusive for shared / Exclusive for unique
-    alloc_on_atomic: True
-    alloc_on_readunique: False
-    dealloc_on_unique: True
-    dealloc_backinv_unique: False
-    dealloc_backinv_shared: False
-    send_evictions: False
-    number_of_snoop_TBEs     : 1
-    number_of_DVM_TBEs       : 1
-    number_of_DVM_snoop_TBEs : 1
   classic:
     mshrs: 96
     tgts_per_mshr: 16

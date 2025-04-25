@@ -1,4 +1,8 @@
-# Example configuration with DDR4
+# Example configuration with Garnet interconnect and DDR4 memory model
+simulation:
+  gem5_version: 24.1.0.2
+  full_system: True
+
 system:
   architecture: arm64
   num_cpus: 2
@@ -6,9 +10,6 @@ system:
   clock: 2.6GHz
   sve_vl: 256
   cache_line_size: 64
-  cpus:
-  - simple
-  - o3cpu
 
 cpus:
   simple:
@@ -30,6 +31,3 @@ interconnect:
 
 network: !include network.yaml
 
-simulation:
-  gem5_version: 24.1.0.2
-  full_system: True
