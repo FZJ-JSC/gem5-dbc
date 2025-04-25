@@ -71,14 +71,15 @@ class AbstractBenchmark(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def filter_varparams(self, params: T) -> bool:
-        """Return True if given parameter combination is valid
+    def filter_varparams(self, params: T, config: Config) -> bool:
+        """Return True if given initial configuration and parameter combination is valid
 
         Args:
             params (T): Current parameter combination
+            config (Config): Initial configuration
 
         Returns:
-            bool: Return True if current parameter combination is valid
+            bool: True if initial configuration and current parameter combination is valid
         """
 
     @abstractmethod
@@ -131,7 +132,7 @@ class AbstractBenchmark(ABC, Generic[T]):
         parameters = [
             p
             for p in iterate(self.get_varparams())
-            if self.filter_varparams(self.P(**p))
+            if self.filter_varparams(self.P(**p), config)
         ]
         assert len(parameters) > 0
         return parameters
