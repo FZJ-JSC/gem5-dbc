@@ -12,11 +12,11 @@ from .system import SystemConf
 
 @dataclass
 class Config:
+    simulation: SimulationConf
     system: SystemConf
     memory: MemoryConf
     interconnect: InterconnectConf
     network: NetworkConf
-    simulation: SimulationConf
     cpus: dict[str, CPUConf] = field(default_factory=dict)
     caches: dict[str, CacheConf] = field(default_factory=dict)
     artifacts: dict[str, list[BinaryArtifact]] = field(default_factory=dict)
@@ -27,16 +27,22 @@ class Config:
 
     @classmethod
     def from_dict(cls, conf_dict: dict):
+        for k in ["simulation", "system", "cpus", "caches"]:
+            assert k in conf_dict, f"Key {k} has not been be defined"
+
         config = cls(
-            system=SystemConf(**conf_dict["system"]),
-            memory=MemoryConf(**conf_dict["memory"]),
-            interconnect=InterconnectConf(**conf_dict["interconnect"]),
-            network=NetworkConf(**conf_dict["network"]),
             simulation=SimulationConf(**conf_dict["simulation"]),
+            system=SystemConf(**conf_dict["system"]),
+            memory=MemoryConf(**conf_dict.get("memory", dict())),
+            interconnect=InterconnectConf(**conf_dict.get("interconnect", dict())),
+            network=NetworkConf(**conf_dict.get("network", dict())),
         )
 
         for k, v in conf_dict["cpus"].items():
             config.cpus[k] = CPUConf(**{**v, "name": k})
+
+        if not config.system.cpus:
+            config.system.cpus = [*config.cpus]
 
         for k, v in conf_dict["caches"].items():
             config.caches[k] = CacheConf(**{**v, "name": k})

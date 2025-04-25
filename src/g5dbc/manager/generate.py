@@ -41,8 +41,7 @@ def generate_work_directory(args: tuple[AbstractBenchmark, str, dict]) -> int:
     config = benchmark.get_updated_config(config)
 
     # Check if config is valid
-    if not check_config(config):
-        return -1
+    assert check_config(config), f"Configuration file {bench_id} inconsistent"
 
     # Get gem5 binary with correct version
     gem5_bin = config.get_artifact(

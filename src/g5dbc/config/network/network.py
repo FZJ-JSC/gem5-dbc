@@ -3,13 +3,13 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass
 class TopologyConf:
-    model: str
+    model: str = ""
     parameters: dict = field(default_factory=dict)
 
 
 @dataclass
 class NetworkConf:
-    topology: TopologyConf
+    topology: TopologyConf = field(default_factory=TopologyConf)
     mesh_vnet_support: list[list[int]] = field(default_factory=list)
     node_vnet_support: list[list[int]] = field(default_factory=list)
     clock: str = ""

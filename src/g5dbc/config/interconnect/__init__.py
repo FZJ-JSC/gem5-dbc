@@ -7,7 +7,7 @@ from .simple import Simple
 
 @dataclass
 class InterconnectConf:
-    model: str = "garnet"
+    model: str = "classic"
     classic: Classic = field(default_factory=Classic)
     garnet: Garnet = field(default_factory=Garnet)
     simple: Simple = field(default_factory=Simple)

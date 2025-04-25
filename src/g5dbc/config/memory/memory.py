@@ -18,5 +18,9 @@ class MemoryConf:
                 self.regions[n] = MemoryRegionConfig(**v)
                 self.regions[n].numa_id = n
 
+        # Set default memory region
+        if not self.regions:
+            self.regions.append(MemoryRegionConfig())
+
     def numa_regions(self) -> list[int]:
         return [n for n in range(len(self.regions))]
