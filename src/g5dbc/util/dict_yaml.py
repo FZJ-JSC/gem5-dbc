@@ -64,5 +64,5 @@ def write(file: Path, data: dict) -> dict:
         dict: Python dict
     """
     with file.open("w", encoding="UTF-8", newline="") as stream:
-        yaml.dump(data, stream, default_flow_style=False)
+        yaml.safe_dump(data, stream, sort_keys=False, default_flow_style=False)
     return data
