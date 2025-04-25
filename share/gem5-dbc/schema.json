@@ -1,0 +1,722 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration schema for gem5-dbc",
+  "description": "Initial architecture configuration and simulation parameters",
+  "type": "object",
+  "properties": {
+    "system": {
+      "type": "object",
+      "description": "System Configuration",
+      "properties": {
+        "architecture": {
+          "type": "string",
+          "description": "Architecture to simulate",
+          "default": "arm64"
+        },
+        "cache_line_size": {
+          "type": "integer",
+          "description": "Cache Line Size",
+          "default": 64
+        },
+        "clock": { "type": "string" },
+        "cpus": { "type": "array", "items": { "type": "string" } },
+        "num_cpus": { "type": "integer" },
+        "num_slcs": { "type": "integer" },
+        "platform": { "type": "string" },
+        "sve_vl": { "type": "integer" },
+        "voltage": { "type": "string" }
+      },
+      "required": ["architecture", "cache_line_size", "clock", "num_cpus"],
+      "additionalProperties": false
+    },
+    "simulation": {
+      "type": "object",
+      "description": "Simulation Configuration",
+      "properties": {
+        "bootloader_binary": { "type": "string" },
+        "disable_listeners": { "type": "boolean" },
+        "full_system": { "type": "boolean", "default": true },
+        "gem5_binary": { "type": "string" },
+        "gem5_script": { "type": "string" },
+        "gem5_version": { "type": "string" },
+        "linux_binary": { "type": "string" },
+        "linux_version": { "type": "string" },
+        "max_seconds": { "type": "null" },
+        "max_tick": { "type": "null" },
+        "output_dir": { "type": "string" },
+        "output_log": { "type": "string" },
+        "srun_script": { "type": "string" },
+        "work_script": { "type": "string" }
+      },
+      "required": ["full_system", "gem5_version"],
+      "additionalProperties": false
+    },
+    "cpus": {
+      "title": "Key Value map of cpu labels to cpu configuration",
+      "description": "This map describes a set of CPUs to be simulated",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/cpu"
+      },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "minProperties": 2,
+      "maxProperties": 2
+    },
+    "caches": {
+      "type": "object",
+      "properties": {
+        "L1D": {
+          "title": "L1 Data Cache",
+          "description": "Configuration settings for the L1 Data Cache",
+          "$ref": "#/$defs/cache"
+        },
+        "L1I": {
+          "title": "L1 Instruction Cache",
+          "description": "Configuration settings for the L1 Instruction Cache",
+          "$ref": "#/$defs/cache"
+        },
+        "L2": {
+          "title": "L2 Cache",
+          "description": "Configuration settings for the L2 Cache",
+          "$ref": "#/$defs/cache"
+        },
+        "SLC": {
+          "title": "System Level Cache",
+          "description": "Configuration settings for the System Level Cache",
+          "$ref": "#/$defs/cache"
+        },
+        "CoherentIO": {
+          "$ref": "#/$defs/cache"
+        },
+        "DWC": {
+          "$ref": "#/$defs/cache"
+        },
+        "IWC": {
+          "$ref": "#/$defs/cache"
+        }
+      },
+      "required": ["CoherentIO", "DWC", "IWC", "L1D", "L1I", "L2", "SLC"],
+      "additionalProperties": false
+    },
+
+    "memory": {
+      "type": "object",
+      "properties": {
+        "controller": {
+          "type": "object",
+          "properties": {
+            "data_channel_size": { "type": "integer" },
+            "number_of_TBEs": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "addr_mapping": { "type": ["string", "null"] },
+              "bandwidth": { "type": "string" },
+              "channels": { "type": "integer" },
+              "dram_settings": {
+                "title": "DRAM model settings",
+                "description": "Configuration settings for the DRAM model",
+                "$ref": "#/$defs/dram"
+              },
+              "extra_parameters": { "type": "object" },
+              "intlv_size": { "type": "integer" },
+              "latency": { "type": "string" },
+              "latency_var": { "type": "string" },
+              "model": { "type": "string" },
+              "numa_id": { "type": "integer" },
+              "size": { "type": "string" },
+              "xor_low_bit": { "type": "integer" }
+            },
+            "required": ["channels", "model", "size"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["regions"],
+      "additionalProperties": false
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "clock": { "type": "string" },
+        "data_width": { "type": "integer" },
+        "mesh_link_latency": { "type": "integer", "default": 1 },
+        "node_link_latency": { "type": "integer", "default": 1 },
+        "router_latency": { "type": "integer", "default": 1 },
+        "cross_numa_latency": { "type": "integer", "default": 1 },
+        "n_vnets": { "type": "integer" },
+        "mesh_vnet_support": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "integer" } }
+        },
+        "node_vnet_support": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "integer" } }
+        },
+        "topology": {
+          "type": "object",
+          "properties": {
+            "model": { "type": "string" },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "cpu_routers": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "integer" } }
+                },
+                "dma_routers": {
+                  "type": "array",
+                  "items": { "type": "integer" }
+                },
+                "internal_links": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "integer" } }
+                },
+                "mem_routers": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "integer" } }
+                },
+                "num_mesh_routers": { "type": "integer" },
+                "rom_routers": {
+                  "type": "array",
+                  "items": { "type": "integer" }
+                },
+                "slc_routers": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "integer" } }
+                }
+              },
+              "required": [
+                "cpu_routers",
+                "dma_routers",
+                "internal_links",
+                "mem_routers",
+                "num_mesh_routers",
+                "rom_routers",
+                "slc_routers"
+              ]
+            }
+          },
+          "required": ["model", "parameters"],
+          "additionalProperties": false
+        },
+        "xor_low_bit": { "type": "integer" }
+      },
+      "required": ["topology"],
+      "additionalProperties": false
+    },
+    "interconnect": {
+      "title": "Interconnect parameters",
+      "description": "Configure simulation interconnect",
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Interconnect model to use"
+        },
+        "classic": {
+          "title": "Classic model",
+          "description": "Classic model settings",
+          "type": "object",
+          "properties": { "slcs_per_core": { "type": "integer" } },
+          "additionalProperties": false
+        },
+        "garnet": {
+          "title": "Garnet model",
+          "description": "Garnet model settings",
+          "type": "object",
+          "properties": {
+            "cntrl_msg_size": { "type": "integer" },
+            "data_link_width": { "type": "integer" },
+            "data_width": { "type": "integer" },
+            "deadlock_threshold": { "type": "integer" },
+            "link_width_bits": { "type": "integer" },
+            "routing_algorithm": { "type": "integer" },
+            "use_link_bridges": { "type": "boolean" },
+            "vcs_per_vnet": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+
+        "simple": {
+          "title": "Simple model",
+          "description": "Simple model settings",
+          "type": "object",
+          "properties": {
+            "bandwidth_factor": { "type": "integer" },
+            "cntrl_msg_size": { "type": "integer" },
+            "data_width": { "type": "integer" },
+            "link_bandwidth": { "type": "integer" },
+            "router_buffer_size": { "type": "integer" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["model"],
+      "additionalProperties": false
+    },
+
+    "artifacts": {
+      "title": "List of binary artifacts",
+      "description": "Lists binary artifacts configured for simulations",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "title": "Binary Artifact",
+          "description": "Describes a binary artifact for simulations",
+          "properties": {
+            "name": { "type": "string" },
+            "path": { "type": "string" },
+            "bintype": {
+              "description": "Artifact binary type",
+              "enum": ["GEM5", "DISK", "BOOT", "KERNEL"]
+            },
+            "md5hash": { "type": "string" },
+            "metadata": { "type": "string" },
+            "version": { "type": "string" }
+          },
+          "required": [
+            "name",
+            "path",
+            "bintype",
+            "md5hash",
+            "metadata",
+            "version"
+          ]
+        }
+      },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "minProperties": 1
+    },
+    "parameters": {
+      "type": "object",
+      "title": "Simulation parameters",
+      "description": "Map containing simulation parameters for current iteration",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+    }
+  },
+  "required": [
+    "caches",
+    "cpus",
+    "interconnect",
+    "memory",
+    "simulation",
+    "system"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "cpu": {
+      "title": "CPU configuration",
+      "description": "Configuration parameters for the simulated CPU",
+      "type": "object",
+      "properties": {
+        "FU": {
+          "title": "Key,Value map of labels to Functional Units",
+          "description": "Description of functional units",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/cpu_FU"
+          },
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+        },
+        "bpred": {
+          "title": "",
+          "description": "",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/cpu_bpred"
+            },
+            { "type": "null" }
+          ]
+        },
+        "clock": {
+          "title": "",
+          "description": "",
+          "type": "string"
+        },
+        "core": {
+          "title": "O3CPU core configuration",
+          "description": "Parameter configuration for the gem5 O3CPU model",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/cpu_core"
+            },
+            { "type": "null" }
+          ]
+        },
+        "extra_parameters": {
+          "type": "object"
+        },
+        "model": {
+          "title": "",
+          "description": "",
+          "type": "string"
+        },
+        "name": {
+          "title": "",
+          "description": "",
+          "type": "string"
+        }
+      },
+      "required": ["clock", "model"],
+      "additionalProperties": false
+    },
+    "cache": {
+      "title": "",
+      "description": "",
+      "type": "object",
+      "properties": {
+        "assoc": { "type": "integer" },
+        "block_size_bits": { "type": "integer" },
+        "classic": {
+          "type": "object",
+          "properties": {
+            "clusivity": { "type": "string" },
+            "mshrs": { "type": "integer" },
+            "snoop_filter_max_capacity": { "type": ["null", "string"] },
+            "tgts_per_mshr": { "type": "integer" },
+            "write_buffers": { "type": "integer" },
+            "writeback_clean": { "type": "boolean" },
+            "xbar_width": { "type": "integer" }
+          },
+          "required": ["mshrs"],
+          "additionalProperties": false
+        },
+        "controller": {
+          "type": "object",
+          "properties": {
+            "alloc_on_atomic": { "type": "boolean" },
+            "alloc_on_readonce": { "type": "boolean" },
+            "alloc_on_readshared": { "type": "boolean" },
+            "alloc_on_readunique": { "type": "boolean" },
+            "alloc_on_seq_acc": { "type": "boolean" },
+            "alloc_on_seq_line_write": { "type": "boolean" },
+            "alloc_on_writeback": { "type": "boolean" },
+            "allow_SD": { "type": "boolean" },
+            "data_channel_size": { "type": "integer" },
+            "data_latency": { "type": "integer" },
+            "dealloc_backinv_shared": { "type": "boolean" },
+            "dealloc_backinv_unique": { "type": "boolean" },
+            "dealloc_on_shared": { "type": "boolean" },
+            "dealloc_on_unique": { "type": "boolean" },
+            "enable_DCT": { "type": "boolean" },
+            "enable_DMT": { "type": "boolean" },
+            "fill_latency": { "type": "integer" },
+            "is_HN": { "type": "boolean" },
+            "mandatory_queue_latency": { "type": "integer" },
+            "number_of_DVM_TBEs": { "type": "integer" },
+            "number_of_DVM_snoop_TBEs": { "type": "integer" },
+            "number_of_TBEs": { "type": "integer" },
+            "number_of_repl_TBEs": { "type": "integer" },
+            "number_of_snoop_TBEs": { "type": "integer" },
+            "policy_type": { "type": "integer" },
+            "read_hit_latency": { "type": "integer" },
+            "read_miss_latency": { "type": "integer" },
+            "request_latency": { "type": "integer" },
+            "response_latency": { "type": "integer" },
+            "sc_lock_base_latency_cy": { "type": "integer" },
+            "sc_lock_enabled": { "type": "boolean" },
+            "send_evictions": { "type": "boolean" },
+            "snoop_latency": { "type": "integer" },
+            "snp_inv_latency": { "type": "integer" },
+            "snp_latency": { "type": "integer" },
+            "stall_recycle_lat": { "type": "integer" },
+            "transitions_per_cycle": { "type": "integer" },
+            "unify_repl_TBEs": { "type": "boolean" },
+            "wait_for_cache_wr": { "type": "boolean" },
+            "write_be_latency": { "type": "integer" },
+            "write_fe_latency": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "extra_parameters": { "type": "object" },
+        "latency": {
+          "type": "object",
+          "properties": {
+            "data": { "type": "integer" },
+            "response": { "type": "integer" },
+            "tag": { "type": "integer" }
+          },
+          "required": ["data", "tag"],
+          "additionalProperties": false
+        },
+        "name": { "type": "string" },
+        "prefetcher": {
+          "title": "",
+          "description": "",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "model": { "type": "string" },
+                "settings": {
+                  "type": "object"
+                }
+              },
+              "required": ["model", "settings"],
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
+        },
+        "resource_stalls": { "type": "boolean" },
+        "sequencer": {
+          "type": "object",
+          "properties": {
+            "max_outstanding_requests": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "size": { "type": "string" },
+        "system_shared": { "type": "boolean" }
+      },
+      "required": ["assoc", "latency", "size"],
+      "additionalProperties": false
+    },
+    "cpu_FU": {
+      "title": "",
+      "description": "",
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" },
+        "ops": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "latency": {
+                    "description": "Operation Latency",
+                    "type": "integer"
+                  },
+                  "name": { "description": "Operation Name", "type": "string" },
+                  "pipelined": {
+                    "description": "Operation is pipelined",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["latency", "name", "pipelined"]
+              },
+              {
+                "type": "array",
+                "prefixItems": [
+                  { "description": "Operation Name", "type": "string" },
+                  { "description": "Operation Latency", "type": "number" },
+                  { "description": "Operation is pipelined", "type": "boolean" }
+                ],
+                "items": false,
+                "minItems": 1,
+                "maxItems": 3
+              }
+            ]
+          }
+        }
+      },
+      "required": ["count", "ops"]
+    },
+    "cpu_core": {
+      "title": "",
+      "description": "",
+      "type": "object",
+      "properties": {
+        "LFSTSize": { "type": "integer" },
+        "LQEntries": { "type": "integer" },
+        "LSQCheckLoads": { "type": "boolean" },
+        "LSQDepCheckShift": { "type": "integer" },
+        "SQEntries": { "type": "integer" },
+        "SSITSize": { "type": "integer" },
+        "backComSize": { "type": "integer" },
+        "cacheLoadPorts": { "type": "integer" },
+        "cacheStorePorts": { "type": "integer" },
+        "commitToDecodeDelay": { "type": "integer" },
+        "commitToFetchDelay": { "type": "integer" },
+        "commitToIEWDelay": { "type": "integer" },
+        "commitToRenameDelay": { "type": "integer" },
+        "commitWidth": { "type": "integer" },
+        "decodeToFetchDelay": { "type": "integer" },
+        "decodeToRenameDelay": { "type": "integer" },
+        "decodeWidth": { "type": "integer" },
+        "dispatchWidth": { "type": "integer" },
+        "fetchBufferSize": { "type": "integer" },
+        "fetchQueueSize": { "type": "integer" },
+        "fetchToDecodeDelay": { "type": "integer" },
+        "fetchTrapLatency": { "type": "integer" },
+        "fetchWidth": { "type": "integer" },
+        "forwardComSize": { "type": "integer" },
+        "iewToCommitDelay": { "type": "integer" },
+        "iewToDecodeDelay": { "type": "integer" },
+        "iewToFetchDelay": { "type": "integer" },
+        "iewToRenameDelay": { "type": "integer" },
+        "issueToExecuteDelay": { "type": "integer" },
+        "issueWidth": { "type": "integer" },
+        "needsTSO": { "type": "boolean" },
+        "numIQEntries": { "type": "integer" },
+        "numPhysCCRegs": { "type": "integer" },
+        "numPhysFloatRegs": { "type": "integer" },
+        "numPhysIntRegs": { "type": "integer" },
+        "numPhysMatRegs": { "type": "integer" },
+        "numPhysVecPredRegs": { "type": "integer" },
+        "numPhysVecRegs": { "type": "integer" },
+        "numROBEntries": { "type": "integer" },
+        "numRobs": { "type": "integer" },
+        "renameToDecodeDelay": { "type": "integer" },
+        "renameToFetchDelay": { "type": "integer" },
+        "renameToIEWDelay": { "type": "integer" },
+        "renameToROBDelay": { "type": "integer" },
+        "renameWidth": { "type": "integer" },
+        "squashWidth": { "type": "integer" },
+        "store_set_clear_period": { "type": "integer" },
+        "trapLatency": { "type": "integer" },
+        "wbWidth": { "type": "integer" }
+      },
+      "required": [
+        "LFSTSize",
+        "LQEntries",
+        "LSQCheckLoads",
+        "LSQDepCheckShift",
+        "SQEntries",
+        "SSITSize",
+        "backComSize",
+        "cacheLoadPorts",
+        "cacheStorePorts",
+        "commitToDecodeDelay",
+        "commitToFetchDelay",
+        "commitToIEWDelay",
+        "commitToRenameDelay",
+        "commitWidth",
+        "decodeToFetchDelay",
+        "decodeToRenameDelay",
+        "decodeWidth",
+        "dispatchWidth",
+        "fetchBufferSize",
+        "fetchQueueSize",
+        "fetchToDecodeDelay",
+        "fetchTrapLatency",
+        "fetchWidth",
+        "forwardComSize",
+        "iewToCommitDelay",
+        "iewToDecodeDelay",
+        "iewToFetchDelay",
+        "iewToRenameDelay",
+        "issueToExecuteDelay",
+        "issueWidth",
+        "needsTSO",
+        "numIQEntries",
+        "numPhysCCRegs",
+        "numPhysFloatRegs",
+        "numPhysIntRegs",
+        "numPhysMatRegs",
+        "numPhysVecPredRegs",
+        "numPhysVecRegs",
+        "numROBEntries",
+        "numRobs",
+        "renameToDecodeDelay",
+        "renameToFetchDelay",
+        "renameToIEWDelay",
+        "renameToROBDelay",
+        "renameWidth",
+        "squashWidth",
+        "store_set_clear_period",
+        "trapLatency",
+        "wbWidth"
+      ]
+    },
+    "cpu_bpred": {
+      "title": "CPU Branch Predictor",
+      "description": "Settings for CPU branch predictor",
+      "type": "object",
+      "properties": {
+        "BTB": {
+          "type": "object",
+          "properties": {
+            "instShiftAmt": { "type": "integer" },
+            "numEntries": { "type": "integer" },
+            "tagBits": { "type": "integer" }
+          },
+          "required": ["numEntries"],
+          "additionalProperties": false
+        },
+        "model": { "type": "string" },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "choiceCtrBits": { "type": "integer" },
+            "choicePredictorSize": { "type": "integer" },
+            "globalCtrBits": { "type": "integer" },
+            "globalPredictorSize": { "type": "integer" },
+            "localHistoryTableSize": { "type": "integer" },
+            "localPredictorSize": { "type": "integer" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["BTB", "model"],
+      "additionalProperties": false
+    },
+    "dram": {
+      "title": "DRAM settings",
+      "description": "Configuration settings for the DRAM model",
+      "type": "object",
+      "properties": {
+        "IDD0": { "type": "string" },
+        "IDD02": { "type": "string" },
+        "IDD2N": { "type": "string" },
+        "IDD2P0": { "type": "string" },
+        "IDD2P1": { "type": "string" },
+        "IDD3N": { "type": "string" },
+        "IDD3N2": { "type": "string" },
+        "IDD3P0": { "type": "string" },
+        "IDD3P1": { "type": "string" },
+        "IDD4R": { "type": "string" },
+        "IDD4W": { "type": "string" },
+        "IDD5": { "type": "string" },
+        "IDD6": { "type": "string" },
+        "VDD": { "type": "string" },
+        "VDD2": { "type": "string" },
+        "activation_limit": { "type": "integer" },
+        "bank_groups_per_rank": { "type": "integer" },
+        "banks_per_rank": { "type": "integer" },
+        "burst_length": { "type": "integer" },
+        "device_bus_width": { "type": "integer" },
+        "device_rowbuffer_size": { "type": "string" },
+        "device_size": { "type": "string" },
+        "devices_per_rank": { "type": "integer" },
+        "page_policy": { "type": "string" },
+        "ranks_per_channel": { "type": "integer" },
+        "read_buffer_size": { "type": "integer" },
+        "tBURST": { "type": "string" },
+        "tCCD_L": { "type": "string" },
+        "tCK": { "type": "string" },
+        "tCL": { "type": "string" },
+        "tCS": { "type": "string" },
+        "tCWL": { "type": "string" },
+        "tPPD": { "type": "string" },
+        "tRAS": { "type": "string" },
+        "tRCD": { "type": "string" },
+        "tREFI": { "type": "string" },
+        "tRFC": { "type": "string" },
+        "tRP": { "type": "string" },
+        "tRRD": { "type": "string" },
+        "tRRD_L": { "type": "string" },
+        "tRTP": { "type": "string" },
+        "tRTW": { "type": "string" },
+        "tWR": { "type": "string" },
+        "tWTR": { "type": "string" },
+        "tWTR_L": { "type": "string" },
+        "tXAW": { "type": "string" },
+        "tXP": { "type": "string" },
+        "tXS": { "type": "string" },
+        "write_buffer_size": { "type": "integer" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
