@@ -15,7 +15,7 @@ class Options:
     resource_metadata: str
     resource_arch: str
     generate: str
-    config_file: str
+    init_config: str
     parse: str
     evaluate: str
     validate: bool
@@ -87,7 +87,7 @@ class Options:
             metavar="benchmark",
         )
         parser.add_argument(
-            "--config-file",
+            "--init-config",
             type=str,
             default="",
             help="Initial configuration for benchmark generation",
@@ -216,8 +216,10 @@ class Options:
             command = "resource_del"
             file_args.append(Path(args.resource_del))
         elif args.generate:
-            if args.config_file == "":
-                raise SystemExit(f"Please specify initial configuration file.")
+            if args.init_config == "":
+                raise SystemExit(
+                    f"Please specify initial configuration file or directory."
+                )
             command = "generate"
             if (
                 _path := files.find(
@@ -234,7 +236,7 @@ class Options:
             file_args.append(_path)
             if (
                 _path := files.find(
-                    args.config_file,
+                    args.init_config,
                     work_dir,
                     args.workspace_dir,
                     args.config_dir,
@@ -243,7 +245,9 @@ class Options:
                     ext="yaml",
                 )
             ) is None:
-                raise SystemExit(f"Could not find configuration {args.config_file}.")
+                raise SystemExit(
+                    f"Could not find configuration file or directory {args.init_config}."
+                )
             file_args.append(_path)
             artifacts = artifact_db_read(artifacts_index)
         elif args.parse:
@@ -271,12 +275,14 @@ class Options:
                 raise SystemExit(f"Could not find module {args.evaluate}.")
             file_args.append(_path)
         elif args.validate:
-            if args.config_file == "":
-                raise SystemExit(f"Please specify initial configuration file.")
+            if args.init_config == "":
+                raise SystemExit(
+                    f"Please specify initial configuration file or directory."
+                )
             command = "validate"
             if (
                 _path := files.find(
-                    args.config_file,
+                    args.init_config,
                     work_dir,
                     args.workspace_dir,
                     args.config_dir,
@@ -285,7 +291,7 @@ class Options:
                     ext="yaml",
                 )
             ) is None:
-                raise SystemExit(f"Could not find configuration {args.config_file}.")
+                raise SystemExit(f"Could not find configuration {args.init_config}.")
             file_args.append(_path)
 
         opts = cls(
