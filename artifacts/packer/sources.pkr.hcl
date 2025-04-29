@@ -13,7 +13,7 @@ source "qemu" "linux_image" {
   vm_name = "disk.img-${var.distro_name}-${local.distro_ver}"
   format  = "raw"
 
-  output_directory = "${local.output_dir}/${var.artifacts_dir}/${var.image_arch}/disks"
+  output_directory = "${local.artifacts_dir}/${var.image_arch}/disks"
 
   disk_size    = var.image_size
   machine_type = local.qemu_machine

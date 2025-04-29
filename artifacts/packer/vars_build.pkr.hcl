@@ -1,10 +1,5 @@
 # Build variables
 
-variable "output_dir" {
-  type    = string
-  default = ""
-}
-
 variable "artifacts_dir" {
   type    = string
   default = "artifacts"
@@ -35,7 +30,7 @@ variable "packages" {
 }
 
 locals {
-  output_dir = coalesce("${var.output_dir}", "${path.cwd}")
+  artifacts_dir = abspath(var.artifacts_dir)
   package_list = join(" ", var.packages)  
   package_source_dir="/root/sources"
   package_build_dir="/root/build"

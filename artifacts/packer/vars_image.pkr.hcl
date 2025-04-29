@@ -25,7 +25,7 @@ locals {
     "x86_64"  = "install"
   }
   debian_versions = {
-    "stable"  = "12.9.0"
+    "stable"  = "12.10.0"
     "testing" = "testing"
   }
   debian_url_prefixes = {

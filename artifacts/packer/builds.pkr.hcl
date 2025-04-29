@@ -36,13 +36,13 @@ build {
 
   provisioner "file" {
     source = "${local.ssh_keys_output}/"
-    destination = "${local.output_dir}/${var.artifacts_dir}/${var.image_arch}/"
+    destination = "${local.artifacts_dir}/${var.image_arch}/"
     direction = "download"
   }
 
   provisioner "file" {
     source = "${local.binaries_output}/"
-    destination = "${local.output_dir}/${var.artifacts_dir}/${var.image_arch}/"
+    destination = "${local.artifacts_dir}/${var.image_arch}/"
     direction = "download"
   }
 
@@ -51,7 +51,7 @@ build {
       "${path.root}/scripts/artifacts.sh",
     ]
     environment_vars = [
-      "ARTIFACTS_DIR=${local.output_dir}/${var.artifacts_dir}",
+      "ARTIFACTS_DIR=${local.artifacts_dir}",
       "ARTIFACTS_ARCH=${var.image_arch}",
     ]
   }
