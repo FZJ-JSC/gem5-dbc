@@ -2,7 +2,8 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from ..benchmark import AbstractBenchmark
-from ..util import dict_csv, dict_json, load_cls
+from ..util import dict_csv, dict_json
+from .benchmark import load_benchmark
 from .options import Options
 
 
@@ -16,20 +17,14 @@ def evaluate_results(opts: Options, path_mod: Path):
 
     Args:
         opts (Options): Command line options
-        path_mod (Path): Benchmark directory to evaluate
+        path_mod (Path): Path to benchmark Python module
     """
 
     # Instantiate benchmark
-    benchmark: AbstractBenchmark = load_cls(
-        path_mod,
-        name=path_mod.parent.stem,
-        workspace_dir=opts.workspace_dir,
-        user_data_dir=opts.user_data_dir,
-        parsed_dir=opts.parsed_dir,
-    )
+    bm: AbstractBenchmark = load_benchmark(opts, path_mod)
 
     # Get benchmark name
-    name = benchmark.name
+    name = bm.name
 
     parsed_dir = opts.workspace_dir.joinpath(name, opts.parsed_dir)
 
@@ -47,7 +42,7 @@ def evaluate_results(opts: Options, path_mod: Path):
         ],
     )
 
-    args_list = [(benchmark, f) for f in parsed_files]
+    args_list = [(bm, f) for f in parsed_files]
 
     data_rows = []
     with Pool(processes=opts.nprocs) as pool:

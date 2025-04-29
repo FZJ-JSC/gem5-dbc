@@ -1,24 +1,23 @@
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 
-def load_cls(path: Path | None, name: str = "", **kwargs):
-    """Instantiate class from Python module
+def load_mod(path: Path, name: str = "") -> ModuleType:
+    """Import a Python module from a given file
 
     Args:
-        path (Path | None): Path of the module
-        name (str, optional): Name of the class in module. If empty, defaults to path.stem.
+        path (Path): Path of the module file
+        name (str, optional): Module name. If not given defaults to path stem.
 
     Raises:
         SystemExit: If Python module could not be loaded
 
     Returns:
-        Any: Instance of class
+        ModuleType: Loaded Python Module
     """
-    if path is None:
-        raise SystemExit(f"No Python module found.")
-    if name == "":
+    if not name:
         name = path.stem
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
@@ -29,4 +28,4 @@ def load_cls(path: Path | None, name: str = "", **kwargs):
 
     mod = importlib.import_module(name)
 
-    return getattr(mod, name)(**kwargs)
+    return mod

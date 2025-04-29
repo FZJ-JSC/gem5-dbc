@@ -16,27 +16,17 @@ class AbstractBenchmark(ABC, Generic[T]):
 
     def __init__(
         self,
+        param_cls: type[T],
         workspace_dir: Path,
         user_data_dir: Path,
         generated_dir="work",
         parsed_dir="parsed",
     ):
+        self.P = param_cls
         self.workspace_dir = workspace_dir
         self.user_data_dir = user_data_dir
         self.generated_dir = workspace_dir.joinpath(self.name, generated_dir)
         self.parsed_dir = workspace_dir.joinpath(self.name, parsed_dir)
-
-    @staticmethod
-    @abstractmethod
-    def P(**kwargs) -> T:
-        """Return instance of benchmark parameter class T
-
-        Args:
-            **kwargs: Parameter class constructor arguments
-
-        Returns:
-            T: Instance of benchmark parameter class
-        """
 
     @abstractmethod
     def get_command(self, params: T, config: Config) -> str:
@@ -52,7 +42,7 @@ class AbstractBenchmark(ABC, Generic[T]):
 
     @abstractmethod
     def get_env(self, params: T, config: Config) -> dict:
-        """Return shell environment for benchmark
+        """Return dictionary of environment variables to set before running benchmark
 
         Args:
             params (T): Current parameter combination
@@ -64,10 +54,11 @@ class AbstractBenchmark(ABC, Generic[T]):
 
     @abstractmethod
     def get_varparams(self) -> dict[str, list]:
-        """Return a list of iterateble parameters
+        """Return the parameter space definition as a map
+           parameter name => list of parameter values
 
         Returns:
-            dict[str, list]: list of iterateble parameters
+            dict[str, list]: Parameter space definition
         """
 
     @abstractmethod
@@ -96,7 +87,7 @@ class AbstractBenchmark(ABC, Generic[T]):
 
     @abstractmethod
     def get_data_rows(self, params: T, stats: dict) -> dict | list[dict]:
-        """Return a single data row or multiple data rows to be written
+        """Return a single data row or multiple data rows to be written to a CSV file
 
         Args:
             params (T): _description_
