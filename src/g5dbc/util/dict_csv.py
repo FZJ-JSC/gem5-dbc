@@ -21,7 +21,8 @@ def read(file: Path) -> list[dict]:
 
 
 def write(file: Path, data: list[dict]) -> list[dict]:
-    """Write a list of rows to a CSV file
+    """Write a list of rows to a CSV file.
+       If list is empty, no file is written.
 
     Args:
         file (Path): CSV file path
@@ -30,7 +31,9 @@ def write(file: Path, data: list[dict]) -> list[dict]:
     Returns:
         list[dict]: Data written to file
     """
-    assert len(data) > 0
+    if not data:
+        return data
+
     with file.open("w", encoding="utf-8", newline="") as stream:
         fields = data[0].keys()
         writer = csv.DictWriter(
