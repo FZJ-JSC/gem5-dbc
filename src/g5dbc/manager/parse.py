@@ -2,11 +2,10 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from ..benchmark import AbstractBenchmark
+from ..stats.flatjs import FlatJS
 from ..util import dict_csv, dict_json, load_cls
 from .config_file import read_config_file
 from .options import Options
-from .parser import StatsParser
-from .parser.flatjs import FlatJS
 
 
 def parse_subdir(args: tuple[AbstractBenchmark, Path]) -> dict:

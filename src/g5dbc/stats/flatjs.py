@@ -1,5 +1,4 @@
-from ...util.parser import parse_number_str
-from . import StatsParser
+from . import StatsParser, parse
 
 
 class FlatJS(StatsParser):
@@ -46,7 +45,7 @@ class FlatJS(StatsParser):
                 b = r.setdefault(c, [0] * n)
                 n = min(n, len(b))
                 for i in range(n):
-                    b[i] = parse_number_str(l[i])
+                    b[i] = parse.parse_number_str(l[i])
             elif key in list_keys:
                 c = f"{c}_{key}"
                 r[c] = val

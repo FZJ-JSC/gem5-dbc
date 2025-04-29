@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from ...util.parser import parse_number_str, stats_line_generator
+from . import parse
 
 
 class StatsParser(ABC):
@@ -24,13 +24,13 @@ class StatsParser(ABC):
     ) -> dict[int, dict[str, int | float | list]]:
         max_roi_id = 5
         parsed_rois: dict[int, dict] = dict()
-        for roi_id, path, key, val in stats_line_generator(stats_file):
+        for roi_id, path, key, val in parse.stats_line_generator(stats_file):
             s = ".".join(path)
             for r, labels in self.regexes:
                 m = re.fullmatch(r, s)
                 if m:
                     for l in labels:
-                        g = [parse_number_str(k) for k in m.groups()]
+                        g = [parse.parse_number_str(k) for k in m.groups()]
                         c = l.format(*g)
                         roi_cols = parsed_rois.setdefault(roi_id, dict())
                         self.update_column(roi_cols, c, key, val)
