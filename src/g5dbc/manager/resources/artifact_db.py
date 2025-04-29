@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from ..util import dict_yaml
+from ...util import dict_yaml
 
 
-def artifact_db_read(index_files: list[Path]) -> dict[str, list[dict[str, str]]]:
+def read(index_files: list[Path]) -> dict[str, list[dict[str, str]]]:
     """Read artifact index from index files
 
     Args:
@@ -31,7 +31,7 @@ def artifact_db_read(index_files: list[Path]) -> dict[str, list[dict[str, str]]]
     return artifacts
 
 
-def artifact_db_add(index_file: Path, arch: str, item: dict[str, str]):
+def add(index_file: Path, arch: str, item: dict[str, str]):
     """Add artifact to artifact index
 
     Args:
@@ -64,8 +64,8 @@ def artifact_db_add(index_file: Path, arch: str, item: dict[str, str]):
     dict_yaml.write(index_file, index_db)
 
 
-def artifact_db_delete(index_file: Path, resource_path: Path):
-    """Delete resource with path resource_path from index_file
+def remove(index_file: Path, resource_path: Path):
+    """Remove resource with path resource_path from index_file
 
     Args:
         index_file (Path): Path to artifact index file

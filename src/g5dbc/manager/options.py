@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..util import files
-from .artifact_db import artifact_db_read
+from .resources import artifact_db
 
 
 @dataclass
@@ -249,7 +249,7 @@ class Options:
                     f"Could not find configuration file or directory {args.init_config}."
                 )
             file_args.append(_path)
-            artifacts = artifact_db_read(artifacts_index)
+            artifacts = artifact_db.read(artifacts_index)
         elif args.parse:
             command = "parse"
             if (
