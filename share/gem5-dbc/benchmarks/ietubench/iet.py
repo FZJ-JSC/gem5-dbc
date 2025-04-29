@@ -15,7 +15,6 @@ class Params:
 
 
 class iet(AbstractBenchmark[Params]):
-    P = Params
 
     def get_varparams(self) -> dict[str, list]:
         return dict(

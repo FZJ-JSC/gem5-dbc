@@ -13,7 +13,6 @@ class Params:
 
 
 class mini_triad(AbstractBenchmark[Params]):
-    P = Params
 
     def get_varparams(self) -> dict[str, list]:
         return dict(
@@ -42,7 +41,7 @@ class mini_triad(AbstractBenchmark[Params]):
 
     def get_env(self, params: Params, config: Config) -> dict:
         nthr = config.system.num_cpus
-        env_dict = dict(
+        return dict(
             # Execution environment should not move OpenMP threads
             OMP_PROC_BIND="true",
             OMP_DISPLAY_ENV="verbose",
@@ -50,9 +49,8 @@ class mini_triad(AbstractBenchmark[Params]):
             OMP_AFFINITY_FORMAT="%0.3L %.8n %i %.10A %.12H",
             OMP_NUM_THREADS=f"{nthr}",
             GOMP_CPU_AFFINITY=f"0-{nthr-1}" if (nthr > 1) else "0",
-            SVE_VEC_LEN=int(config.system.sve_vl / 8),
+            SVE_VEC_LEN=(config.system.sve_vl // 8),
         )
-        return env_dict
 
     def get_command(self, params: Params, config: Config) -> str:
         # Path in Linux image file
@@ -80,7 +78,7 @@ class mini_triad(AbstractBenchmark[Params]):
         for k, cols in key_cols.items():
             for col in cols:
                 if col in stats:
-                    row[k] = stats[col]
+                    row[k] = int(stats[col])
                     break
 
         row["throughput"] = params.size / row["cpu_numCycles"]
