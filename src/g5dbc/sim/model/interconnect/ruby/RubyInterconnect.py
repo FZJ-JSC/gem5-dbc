@@ -138,7 +138,7 @@ class RubyInterconnect(CoherentInterconnect):
             mem_ctrl = mem_sys.get_mem_ctrl(numa_id, ctrl_id)
 
             for ctrl in node.get_controllers():
-                mem_ctrl.connect_memory_port(ctrl.memory_out_port)
+                ctrl.attach_memory_ctrl(mem_ctrl)
                 ctrl.set_addr_ranges(mem_ctrl.get_addr_ranges())
 
     def connect_rom_nodes(self, mems: list[m5_SimpleMemory]):
@@ -157,7 +157,7 @@ class RubyInterconnect(CoherentInterconnect):
             node.create_controller(config, self.ruby_system)
 
             for ctrl in node.get_controllers():
-                mems[node.get_ctrl_id()].port = ctrl.memory_out_port
+                ctrl.attach_memory_ctrl(mems[node.get_ctrl_id()])
                 ctrl.set_addr_ranges([mems[node.get_ctrl_id()].range])
 
     def connect_dma_nodes(self, ports: list):
@@ -194,7 +194,6 @@ class RubyInterconnect(CoherentInterconnect):
         network = NetworkFactory.create(config, self.ruby_system)
 
         network.initialize(topology)
-
         network.connect_nodes(nodes)
         network.connect_interfaces()
 
