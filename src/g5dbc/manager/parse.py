@@ -9,19 +9,26 @@ from .config_file import read_config_file
 from .options import Options
 
 
-def parse_subdir(args: tuple[AbstractBenchmark, Path]) -> dict:
-    bm, stats_dir = args
+def parse_results(args: tuple[Options, AbstractBenchmark, Path]) -> dict:
+    """Parse simulation results directory
+
+    Args:
+        args (tuple[Options, AbstractBenchmark, Path]): Command line options, benchmark instance, results directory path
+
+    Returns:
+        dict: Set of simulation parameters for current simulation
+    """
+
+    opts, bm, stats_dir = args
 
     bench_id = stats_dir.name
 
-    output_file = bm.workspace_dir.joinpath(bm.name, bm.parsed_dir, f"{bench_id}")
+    output_file = Path(opts.output_dir).joinpath(opts.parsed_dir, bench_id)
 
-    parser = FlatJS(parser_re_dir=bm.user_data_dir.joinpath("parser"))
-
-    config_file = stats_dir.joinpath(f"config.yaml")
+    parser = FlatJS(parser_re_dir=Path(opts.parser_regex_dir))
 
     # Read benchmark configuration
-    config = read_config_file(config_file)
+    config = read_config_file(stats_dir.joinpath(f"config.yaml"))
     parsed_output = dict(
         output_log=bm.parse_output_log(stats_dir.joinpath(f"output.log")),
         stdout_log=bm.parse_stdout_log(stats_dir.joinpath(f"system.terminal")),
@@ -33,7 +40,7 @@ def parse_subdir(args: tuple[AbstractBenchmark, Path]) -> dict:
         **bm.get_column_keys(config),
     )
 
-    print(f"parse_subdir: Parsing {bench_id} to {output_file}")
+    print(f"parse_results: Parsing {bench_id} to {output_file}")
 
     parsed_rois = parser.parse_stats(
         stats_params,
@@ -49,20 +56,19 @@ def parse_subdir(args: tuple[AbstractBenchmark, Path]) -> dict:
     return stats_params
 
 
-def parse_workload(opts: Options, path_mod: Path):
+def parse_workload(opts: Options):
     """Parse benchmark results
 
     Args:
         opts (Options): Command line options
-        path_mod (Path): Path to benchmark Python module
     """
-    # Instantiate benchmark
-    bm = load_benchmark(opts, path_mod)
 
-    # Set benchmark configurations directory
-    # {workspace_dir}/{name}/{generated_dir}
-    generated_dir = opts.workspace_dir.joinpath(bm.name, opts.generated_dir)
-    parsed_dir = opts.workspace_dir.joinpath(bm.name, opts.parsed_dir)
+    # Instantiate benchmark
+    bm = load_benchmark(opts, Path(opts.parse))
+
+    # Set benchmark work and parsed directory
+    workld_dir = Path(opts.output_dir).joinpath(opts.workld_dir)
+    parsed_dir = Path(opts.output_dir).joinpath(opts.parsed_dir)
 
     # Create benchmark results directory
     parsed_dir.mkdir(parents=True, exist_ok=True)
@@ -76,21 +82,21 @@ def parse_workload(opts: Options, path_mod: Path):
 
     stats_dirs = [
         (f.name, f)
-        for f in generated_dir.iterdir()
+        for f in workld_dir.iterdir()
         if f.is_dir()
         and f.joinpath("stats.txt").is_file()
         and f.joinpath("stats.txt").stat().st_size > 0
         and f.name not in parsed_ids
     ]
 
-    args_list = [(bm, stats_dir) for _, stats_dir in stats_dirs]
+    args_list = [(opts, bm, stats_dir) for _, stats_dir in stats_dirs]
 
     with Pool(processes=opts.nprocs) as pool:
-        for result in list(pool.imap_unordered(parse_subdir, args_list)):
+        for result in list(pool.imap_unordered(parse_results, args_list)):
             parsed_stats.append(result)
 
     # for p in args_list[:1]:
-    #    parse_subdir(p)
+    #    parse_results(p)
 
     # Write index
     print(f"Writing index")

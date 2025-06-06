@@ -3,35 +3,30 @@ import subprocess
 from pathlib import Path
 
 from ...util import files
+from ..options import Options
 
 
-def get_resource_simulator(path: Path) -> tuple[str, dict[str, str]]:
+def add_simulator(opts: Options) -> tuple[str, dict[str, str]]:
 
-    if not path.is_file():
-        raise SystemExit(f"gem5 binary path does not exist: {path}")
+    resource_path = Path(opts.resource_add).resolve()
 
     arch = None
+    ver = ""
+    meta = ""
 
-    _name = path.name
-    _path = str(path.absolute())
-    _hash = files.hash_md5(path)
-    _ver = ""
-    _meta = ""
-
-    outp = subprocess.run([str(path), "-B"], capture_output=True)
+    outp = subprocess.run([str(resource_path), "-B"], capture_output=True)
     outl = outp.stdout.decode().splitlines()
 
-    r_meta = r"compiled (.+)"
     r_arch = r"USE_(\w+)_ISA = True"
     r_ver = r"gem5 version ([\w\.-]+)"
+    r_meta = r"compiled (.+)"
     for l in outl:
         if m := re.fullmatch(r_meta, l.strip()):
-            _meta = m[1]
+            meta = m[1]
             continue
         if m := re.fullmatch(r_ver, l.strip()):
-            _ver = m[1]
+            ver = m[1]
             continue
-
         if m := re.fullmatch(r_arch, l.strip()):
             match m[1]:
                 case "ARM":
@@ -41,15 +36,15 @@ def get_resource_simulator(path: Path) -> tuple[str, dict[str, str]]:
             continue
 
     if arch is None:
-        raise SystemExit(f"Could not determine gem5 isa: {path}")
+        raise SystemExit(f"Could not determine gem5 isa: {resource_path}")
 
     entry: dict[str, str] = dict(
         bintype="GEM5",
-        name=_name,
-        path=_path,
-        md5hash=_hash,
-        version=_ver,
-        metadata=_meta,
+        name=resource_path.name,
+        path=str(resource_path),
+        md5hash=opts.resource_hash,
+        version=ver,
+        metadata=meta,
     )
 
     return arch, entry

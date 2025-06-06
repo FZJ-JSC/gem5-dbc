@@ -12,7 +12,7 @@ def evaluate_file(args: tuple[AbstractBenchmark, Path]) -> list[dict]:
     return benchmark.get_data_rows_from_stats(dict_json.read(stats_file))
 
 
-def evaluate_results(opts: Options, path_mod: Path):
+def evaluate_results(opts: Options):
     """Evaluate parsed results
 
     Args:
@@ -21,12 +21,11 @@ def evaluate_results(opts: Options, path_mod: Path):
     """
 
     # Instantiate benchmark
-    bm: AbstractBenchmark = load_benchmark(opts, path_mod)
-
+    bm: AbstractBenchmark = load_benchmark(opts, Path(opts.evaluate))
     # Get benchmark name
     name = bm.name
-
-    parsed_dir = opts.workspace_dir.joinpath(name, opts.parsed_dir)
+    # Get parser output directory
+    parsed_dir = Path(opts.output_dir).joinpath(opts.parsed_dir)
 
     # Check if index.csv already created
     parsed_stats = dict_csv.read(parsed_dir.joinpath("index.csv"))

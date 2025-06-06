@@ -52,11 +52,6 @@ def load_benchmark(opts: Options, path: Path | None) -> AbstractBenchmark:
     if bench_cls is None:
         raise SystemExit(f"No Benchmark class found in Python module.")
 
-    b: AbstractBenchmark = bench_cls(
-        param_cls=param_cls,
-        workspace_dir=opts.workspace_dir,
-        user_data_dir=opts.user_data_dir,
-        parsed_dir=opts.parsed_dir,
-    )
+    b: AbstractBenchmark = bench_cls(param_cls=param_cls)
 
     return b

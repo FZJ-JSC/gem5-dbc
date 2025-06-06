@@ -3,7 +3,7 @@ from pathlib import Path
 from ...util import dict_yaml
 
 
-def read(index_files: list[Path]) -> dict[str, list[dict[str, str]]]:
+def read_files(index_files: list[str]) -> dict[str, list[dict[str, str]]]:
     """Read artifact index from index files
 
     Args:
@@ -18,10 +18,11 @@ def read(index_files: list[Path]) -> dict[str, list[dict[str, str]]]:
     artifacts = dict()
     # Load artifact files
     for f in index_files:
-        if not f.exists():
+        fpath = Path(f)
+        if not fpath.exists():
             raise SystemExit(f"Artifact index does not exist: {f}")
-        l = dict_yaml.read(f)
-        p = f.resolve().parent
+        l = dict_yaml.read(fpath)
+        p = fpath.resolve().parent
         for arch, items in l.items():
             arch_items: list = artifacts.setdefault(arch, [])
             for i in items:
@@ -46,7 +47,7 @@ def add(index_file: Path, arch: str, item: dict[str, str]):
     index_db: dict[str, list[dict[str, str]]] = dict()
 
     if index_file.exists():
-        index_db: dict[str, list[dict[str, str]]] = dict_yaml.read(index_file)
+        index_db = dict_yaml.read(index_file)
 
     arch_objs = index_db.setdefault(arch, [])
     idx = [i for i, obj in enumerate(arch_objs) if obj["path"] == item["path"]]

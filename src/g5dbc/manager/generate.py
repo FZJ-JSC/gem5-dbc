@@ -9,11 +9,17 @@ from ..util import dict_csv, files
 from .benchmark import load_benchmark
 from .config_file import read_config_file, write_config_file
 from .options import Options
+from .resources import artifact_db
 
 
 def generate_bench_id(data: list[dict]) -> list[dict]:
-    """
-    Sort parameter list and add bench_id column
+    """Sort parameter list and add bench_id column
+
+    Args:
+        data (list[dict]): List of parameter iterations
+
+    Returns:
+        list[dict]: Sorted parameter iterations list with additional bench_id column
     """
     # sort dictionaries
     cols = [str(k) for k in data[0].keys()]
@@ -28,11 +34,11 @@ def generate_bench_id(data: list[dict]) -> list[dict]:
     return idx_data
 
 
-def generate_work_directory(args: tuple[AbstractBenchmark, str, dict]) -> int:
+def generate_work_directory(args: tuple[Options, AbstractBenchmark, str, dict]) -> int:
     """Generate work directory for given benchmark parameters
 
     Args:
-        args (tuple[AbstractBenchmark, str, dict]): Benchmark instance, benchmark id, params
+        args (tuple[Options, AbstractBenchmark, str, dict]): Command line options, benchmark instance, benchmark ID, params
 
     Raises:
         FileNotFoundError: Error if gem5 binary could not be found
@@ -40,10 +46,11 @@ def generate_work_directory(args: tuple[AbstractBenchmark, str, dict]) -> int:
     Returns:
         int: Returns 0 if successful
     """
-    bm, bench_id, params = args
 
-    base_dir = bm.workspace_dir.joinpath(bm.name)
-    output_dir = bm.generated_dir.joinpath(bench_id)
+    opts, bm, bench_id, params = args
+
+    base_dir = Path(opts.output_dir).joinpath(bm.name)
+    workld_dir = base_dir.joinpath(opts.workld_dir, bench_id)
 
     # Read default benchmark configuration
     config = read_config_file(base_dir.joinpath("index.yaml"), parameters=params)
@@ -53,34 +60,35 @@ def generate_work_directory(args: tuple[AbstractBenchmark, str, dict]) -> int:
     assert check_config(config), f"Configuration file {bench_id} inconsistent"
 
     # Get gem5 binary with correct version
-    gem5_bin = config.get_artifact(
+    gem5_bin = config.search_artifacts(
         typename="GEM5",
         name=config.simulation.gem5_binary,
         version=config.simulation.gem5_version,
     )
 
-    if gem5_bin is None:
+    if not gem5_bin:
         raise FileNotFoundError(
-            f"Could not find gem5 binary '{config.simulation.gem5_binary}' version '{config.simulation.gem5_version}'. "
-            f"Please check your local artifact index."
+            f"Could not find requested gem5 binary name='{config.simulation.gem5_binary}' version='{config.simulation.gem5_version}'. "
+            f"Please add the correct gem5 binary to your artifact index files, {opts.artifact_index}, ",
+            f"or update the configured version in your initial system configuration file {opts.init_config}.",
         )
 
     # Update simulation info
-    config.simulation.gem5_binary = gem5_bin.name
-    config.simulation.gem5_version = gem5_bin.version
-    config.simulation.output_dir = str(output_dir)
+    config.simulation.gem5_binary = gem5_bin[0].name
+    config.simulation.gem5_version = gem5_bin[0].version
+    config.simulation.output_dir = str(workld_dir)
 
     # Create output directory
-    output_dir.mkdir(parents=True, exist_ok=True)
+    workld_dir.mkdir(parents=True, exist_ok=True)
 
     # Write config params to local config file
-    config_file = output_dir.joinpath("config.yaml")
+    config_file = workld_dir.joinpath("config.yaml")
     config_file = write_config_file(config_file, config)
 
     # Write work script
     files.write_template(
-        output_dir,
-        bm.user_data_dir.joinpath("templates", config.simulation.work_script),
+        workld_dir,
+        Path(opts.templates_dir).joinpath(config.simulation.work_script),
         benchmark_cmd=bm.get_bench_command(config),
         benchmark_env="\n".join(
             ['export {}="{}"'.format(k, v) for k, v in bm.get_env_vars(config).items()]
@@ -89,56 +97,56 @@ def generate_work_directory(args: tuple[AbstractBenchmark, str, dict]) -> int:
 
     # Write srun script
     files.write_template(
-        output_dir,
-        bm.user_data_dir.joinpath("templates", config.simulation.srun_script),
-        gem5_bin=gem5_bin.path,
+        workld_dir,
+        Path(opts.templates_dir).joinpath(config.simulation.srun_script),
+        gem5_bin=gem5_bin[0].path,
         gem5_script=base_dir.joinpath(config.simulation.gem5_script),
-        gem5_workdir=output_dir,
+        gem5_workdir=workld_dir,
         gem5_output=config.simulation.output_log,
     ).chmod(0o744)
 
     return 0
 
 
-def generate_workload(opts: Options, path_mod: Path, path_cfg: Path):
-    """Generate Workload
+def generate_workload(opts: Options):
+    """Generate workload directories
 
     Args:
         opts (Options): Command line options
-        path_mod (Path): Path to benchmark Python module
-        path_cfg (Path): Path to initial configuration
 
     Raises:
         FileExistsError: Error if benchmark index file already exists
     """
+
     # Instantiate benchmark
-    bm = load_benchmark(opts, path_mod)
+    bm = load_benchmark(opts, Path(opts.generate))
 
     # Read default benchmark configuration with artifacts
-    config = read_config_file(path_cfg, artifacts=opts.artifacts)
+    config = read_config_file(
+        Path(opts.init_config), artifacts=artifact_db.read_files(opts.artifact_index)
+    )
 
     # Base directory
-    base_dir = opts.workspace_dir.joinpath(bm.name)
+    base_dir = Path(opts.output_dir).joinpath(bm.name)
 
     # Set benchmark configurations directory
-    # {workspace_dir}/{name}/{generated_dir}
-    generated_dir = base_dir.joinpath(opts.generated_dir)
+    workld_dir = base_dir.joinpath(opts.workld_dir)
 
     # Create benchmark results directory
-    generated_dir.mkdir(parents=True, exist_ok=True)
+    workld_dir.mkdir(parents=True, exist_ok=True)
 
     # Write default configuration to base directory
     write_config_file(base_dir.joinpath("index.yaml"), config)
 
     # Copy benchmark Python module
     copy2(
-        path_mod,
+        opts.generate,
         base_dir.joinpath("main.py"),
     )
 
     # Copy wrapper srun.py
     copy2(
-        opts.user_data_dir.joinpath("templates", config.simulation.gem5_script),
+        Path(opts.templates_dir).joinpath(config.simulation.gem5_script),
         base_dir.joinpath(config.simulation.gem5_script),
     )
 
@@ -148,7 +156,7 @@ def generate_workload(opts: Options, path_mod: Path, path_cfg: Path):
     parameters = generate_bench_id(bm.get_parameter_list(config))
 
     # Write parameter index
-    index_file = generated_dir.joinpath("index.csv")
+    index_file = workld_dir.joinpath("index.csv")
     if index_file.exists():
         raise FileExistsError(f"Benchmark index file {index_file} already exists")
     else:
@@ -156,7 +164,7 @@ def generate_workload(opts: Options, path_mod: Path, path_cfg: Path):
 
     print(f"Generating {len(parameters)} scripts for {bm.name}")
 
-    args_list = [(bm, p.pop("bench_id"), p) for p in parameters]
+    args_list = [(opts, bm, p.pop("bench_id"), p) for p in parameters]
     p_results = []
     with Pool(processes=opts.nprocs) as pool:
         for result in list(pool.imap_unordered(generate_work_directory, args_list)):

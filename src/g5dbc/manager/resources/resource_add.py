@@ -1,0 +1,58 @@
+from pathlib import Path
+
+from ...util import files
+from ..options import Options
+from . import artifact_db
+from .simulator import add_simulator
+
+
+def add_item(opts: Options) -> tuple[str, dict[str, str]]:
+
+    if not opts.resource_arch:
+        raise SystemExit(f"Resource architecture not specified.")
+
+    if not opts.resource_name:
+        raise SystemExit(f"Resource name not specified.")
+
+    if not opts.resource_version:
+        raise SystemExit(f"Resource version not specified.")
+
+    return opts.resource_arch, dict(
+        bintype=opts.resource_type,
+        name=opts.resource_name,
+        version=opts.resource_version,
+        metadata=opts.resource_meta,
+        path=opts.resource_add,
+        md5hash=opts.resource_hash,
+    )
+
+
+def resource_add(opts: Options):
+
+    idx = Path(opts.artifact_index[0])
+    res = Path(opts.resource_add)
+
+    if not opts.resource_hash:
+        opts.resource_hash = files.hash_md5(res)
+
+    if res.is_relative_to(idx.parent):
+        opts.resource_add = str(res.relative_to(idx.parent))
+
+    match opts.resource_type:
+        case "GEM5":
+            if opts.resource_version:
+                arch, item = add_item(opts)
+            else:
+                arch, item = add_simulator(opts)
+        case "KERNEL":
+            arch, item = add_item(opts)
+        case "DISK":
+            arch, item = add_item(opts)
+        case "BOOT":
+            arch, item = add_item(opts)
+        case "":
+            raise SystemExit(f"Resource type not specified.")
+        case _:
+            raise SystemExit(f"Resource type {opts.resource_type} unknown.")
+
+    artifact_db.add(idx, arch, item)

@@ -14,19 +14,8 @@ class AbstractBenchmark(ABC, Generic[T]):
     Abstract Benchmark
     """
 
-    def __init__(
-        self,
-        param_cls: type[T],
-        workspace_dir: Path,
-        user_data_dir: Path,
-        generated_dir="work",
-        parsed_dir="parsed",
-    ):
+    def __init__(self, param_cls: type[T]):
         self.P = param_cls
-        self.workspace_dir = workspace_dir
-        self.user_data_dir = user_data_dir
-        self.generated_dir = workspace_dir.joinpath(self.name, generated_dir)
-        self.parsed_dir = workspace_dir.joinpath(self.name, parsed_dir)
 
     @abstractmethod
     def get_command(self, params: T, config: Config) -> str:
