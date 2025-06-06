@@ -47,7 +47,7 @@ class Config:
         for k, v in conf_dict["caches"].items():
             config.caches[k] = CacheConf(**{**v, "name": k})
 
-        for k, v in conf_dict.get("artifacts", dict()).items():
+        for k, v in conf_dict.get("artifacts", list()).items():
             config.artifacts[k] = [BinaryArtifact(**a) for a in v]
 
         for k, v in conf_dict.get("parameters", dict()).items():
@@ -55,12 +55,12 @@ class Config:
 
         return config
 
-    def search_artifact(
+    def search_artifacts(
         self,
         typename: str,
         name: str = "",
         version: str = "",
-    ) -> dict[str, BinaryArtifact]:
+    ) -> list[BinaryArtifact]:
         arch_name = self.system.architecture
         artifacts = self.artifacts[arch_name]
 
@@ -68,21 +68,4 @@ class Config:
             (x.version == version or version == "") and (x.name == name or name == "")
         )
 
-        return dict([(a.name, a) for a in artifacts if _select(a)])
-
-    def get_artifact(
-        self,
-        typename: str,
-        name: str = "",
-        version: str = "",
-    ) -> BinaryArtifact | None:
-        return next(
-            iter(
-                self.search_artifact(
-                    typename=typename,
-                    name=name,
-                    version=version,
-                ).values()
-            ),
-            None,
-        )
+        return [a for a in artifacts if _select(a)]
