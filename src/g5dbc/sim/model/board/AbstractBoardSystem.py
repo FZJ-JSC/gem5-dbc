@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
 
-from g5dbc.config import Config
-from g5dbc.sim.m5_objects import m5_SrcClockDomain, m5_VoltageDomain
 from g5dbc.sim.model.cpu import AbstractProcessor
 from g5dbc.sim.model.cpu.AbstractCore import AbstractCore
 from g5dbc.sim.model.interconnect import CoherentInterconnect
 from g5dbc.sim.model.memory import AbstractMemSystem
+from g5dbc.sim.model.work import AbstractWork
 
 
 class AbstractBoardSystem:
@@ -56,6 +55,17 @@ class AbstractBoardSystem:
             AbstractProcessor: Processor instance
         """
 
+    @abstractmethod
+    def assign_workload(self, work: AbstractWork) -> AbstractBoardSystem:
+        """Assign workload
+
+        Args:
+            work (AbstractWork): Workload to assign
+
+        Returns:
+            AbstractBoardSystem: Self instance for method chaining
+        """
+
     def switch_cpus(self) -> list[tuple[AbstractCore, AbstractCore]]:
         """Return a list of current and next core tuples to switch
 
@@ -64,16 +74,3 @@ class AbstractBoardSystem:
         """
         processor = self.get_board_procesor()
         return processor.switch_next()
-
-    # @TODO: DTB only needed for Arm systems
-    @abstractmethod
-    def generate_dtb(self) -> None:
-        """
-        Generate DTB file
-        """
-
-    def create_system_clocks(self, config: Config):
-        self.voltage_domain = m5_VoltageDomain(voltage=config.system.voltage)
-        self.clk_domain = m5_SrcClockDomain(
-            clock=config.system.clock, voltage_domain=self.voltage_domain
-        )

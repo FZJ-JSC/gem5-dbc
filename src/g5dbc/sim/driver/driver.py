@@ -17,8 +17,6 @@ class SimulationDriver:
         self.system = system
         self.config = config
 
-        system.generate_dtb()
-
         self.max_tick = m5_MaxTick()
 
         if config.simulation.disable_listeners:

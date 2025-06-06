@@ -4,6 +4,7 @@ from .factory.board import BoardFactory
 from .factory.cpu import ProcessorFactory
 from .factory.interconnect import InterconnectFactory
 from .factory.memory import MemSystemFactory
+from .factory.work import WorkloadFactory
 
 
 def simulate(config: Config) -> int:
@@ -13,6 +14,7 @@ def simulate(config: Config) -> int:
         .connect_processor(ProcessorFactory.create(config))
         .connect_memory(MemSystemFactory.create(config))
         .connect_interconnect(InterconnectFactory.create(config))
+        .assign_workload(WorkloadFactory.create(config))
     )
 
     simulation = SimulationDriver(config=config, system=system)

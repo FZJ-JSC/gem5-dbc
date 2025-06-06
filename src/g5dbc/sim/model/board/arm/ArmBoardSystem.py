@@ -1,9 +1,13 @@
-from pathlib import Path
-
 from g5dbc.config import Config
+from g5dbc.config.artifacts import BinaryArtifact
 from g5dbc.config.memory import MemoryRegionConfig
-from g5dbc.sim.m5_objects import m5_Addr, m5_AddrRange
-from g5dbc.sim.m5_objects.arch import m5_ArmFsLinux, m5_ArmSystem
+from g5dbc.sim.m5_objects import (
+    m5_Addr,
+    m5_AddrRange,
+    m5_SrcClockDomain,
+    m5_VoltageDomain,
+)
+from g5dbc.sim.m5_objects.arch import m5_ArmSystem
 from g5dbc.sim.m5_objects.dev import m5_PciVirtIO, m5_VirtIOBlock
 from g5dbc.sim.m5_objects.io import m5_BadAddr, m5_Bridge, m5_IOXBar, m5_SystemXBar
 from g5dbc.sim.m5_objects.mem import m5_SimpleMemory
@@ -11,6 +15,7 @@ from g5dbc.sim.model.cpu import AbstractProcessor
 from g5dbc.sim.model.interconnect import CoherentInterconnect
 from g5dbc.sim.model.memory import AbstractMemSystem
 from g5dbc.sim.model.storage import FileDiskImage
+from g5dbc.sim.model.work import AbstractWork
 
 from ..AbstractBoardSystem import AbstractBoardSystem
 
@@ -32,20 +37,12 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         self.attach_chip_IO()
 
-        self.attach_disk_images()
-
-        self.attach_pci_devices()
-
-        self.configure_system_boot()
+        self.attach_disk_images(config.search_artifacts("DISK"))
 
     def init_board(self) -> None:
         config = self._config
-
         # Set Platform
         self.realview.connect_global_interrupt(self)
-
-        self._bootmem: list[m5_SimpleMemory] = self.realview.get_bootmem()
-
         # @TODO: Assumes VExpress_GEM5_Base platform
         self.mem_ranges = self.create_memory_ranges(config.memory.regions)
         # Set NUMA ids of memory ranges for DTB
@@ -54,7 +51,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
     def create_IO_bus(self):
         config = self._config
 
-        self._pci_devices = []
+        # self._pci_devices = []
         self._dma_ports = None if config.interconnect.is_classic() else []
         self._mem_ports = []
 
@@ -89,7 +86,7 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         """
         Return a list of m5.objects.Port
         """
-        return self._dma_ports
+        return [] if self._dma_ports is None else self._dma_ports
 
     def attach_chip_IO(self):
         if self._config.interconnect.is_classic():
@@ -105,12 +102,10 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         self.realview.attachIO(bus=self.iobus, dma_ports=self._dma_ports)
 
-    def attach_disk_images(self):
-        config = self._config
+    def attach_disk_images(self, disk_images: list[BinaryArtifact]):
 
         # Setup VirtIO disk images
-        disk_images = config.search_artifact("DISK")
-        paths = [str(v.path) for k, v in disk_images.items()]
+        paths = [str(v.path) for v in disk_images]
         disks = [FileDiskImage(f) for f in paths]
 
         self.pci_vio_block = [
@@ -118,50 +113,24 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
         ]
 
         for dev in self.pci_vio_block:
-            self._pci_devices.append(dev)
-
-    def attach_pci_devices(self):
-        for dev in self._pci_devices:
             self.realview.attachPciDevice(
-                dev, self.get_IO_bus(), dma_ports=self.get_DMA_ports()
+                dev, self.get_IO_bus(), dma_ports=self._dma_ports
             )
 
-    def configure_system_boot(self):
-        config = self._config
+    def assign_workload(self, work: AbstractWork) -> AbstractBoardSystem:
 
-        output_dir = Path(config.simulation.output_dir)
-        kernel = config.get_artifact(
-            "KERNEL",
-            name=config.simulation.linux_binary,
-            version=config.simulation.linux_version,
-        )
-        bootloader = config.get_artifact(
-            "BOOT",
-            name=config.simulation.bootloader_binary,
-            version=self.realview.get_version(),
-        )
-        disk_images = config.search_artifact("DISK")
-        root_partition = [v.metadata for k, v in disk_images.items()]
+        self.workload = work
 
-        if kernel is None:
-            raise ValueError(f"Linux Kernel not found.")
-        if bootloader is None:
-            raise ValueError(f"Bootloader list empty")
-        if not root_partition:
-            raise ValueError(f"Disk image list empty")
-
-        # Assume first disk in list to be root disk
-        kernel_metadata = kernel.metadata
-        self.workload = m5_ArmFsLinux(
-            output_dir=str(output_dir),
-            command_line=f"{kernel_metadata} root={root_partition[0]}",
-            kernel_path=str(kernel.path),
+        self.realview.setupBootLoader(
+            self, lambda name: work.get_bootloader(self.realview.get_version())
         )
 
-        # Use first bootloader in list
-        self.realview.setupBootLoader(self, lambda name: str(bootloader.path))
+        self.readfile = work.get_work_script()
 
-        self.readfile = str(output_dir.joinpath(config.simulation.work_script))
+        if (f := self.workload.get_dtb_file()) is not None:
+            self.generateDtb(f)
+
+        return self
 
     def set_mem_range_numa_ids(self, ids: list[int]) -> None:
         """ """
@@ -206,21 +175,17 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
 
         return self
 
-    def connect_interconnect(
-        self, interconnect: CoherentInterconnect
-    ) -> AbstractBoardSystem:
-        config = self._config
+    def connect_interconnect(self, ic: CoherentInterconnect) -> AbstractBoardSystem:
+        self.interconnect = ic
 
-        self.interconnect = interconnect
+        ic.connect_IO_bus(self.get_IO_bus())
 
-        interconnect.connect_IO_bus(self.get_IO_bus())
+        ic.connect_MEM_bus(self.get_MEM_bus())
 
-        interconnect.connect_MEM_bus(self.get_MEM_bus())
-
-        interconnect.connect_board_port(self.system_port)
+        ic.connect_board_port(self.system_port)
 
         # Connect CPUs
-        interconnect.connect_cpu_nodes(self.get_board_procesor())
+        ic.connect_cpu_nodes(self.get_board_procesor())
 
         # Define HNF ranges
         hnf_ranges = [[r] for r in self.get_mem_ranges()]
@@ -230,18 +195,18 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
             hnf_ranges[0].append(m.range)
 
         # Connect HNFs
-        interconnect.connect_slc_nodes(hnf_ranges)
+        ic.connect_slc_nodes(hnf_ranges)
 
         # Connect Mem
-        interconnect.connect_mem_nodes(self.mem_ctrls)
+        ic.connect_mem_nodes(self.mem_ctrls)
 
-        interconnect.connect_rom_nodes(self.get_board_memories())
+        ic.connect_rom_nodes(self.get_board_memories())
 
-        interconnect.connect_dma_nodes(self.get_DMA_ports())
+        ic.connect_dma_nodes(self.get_DMA_ports())
 
-        interconnect.connect_network()
+        ic.connect_network()
 
-        interconnect.set_downstream()
+        ic.set_downstream()
 
         return self
 
@@ -267,7 +232,8 @@ class ArmBoardSystem(m5_ArmSystem, AbstractBoardSystem):
     def get_mem_ranges(self) -> list[m5_AddrRange]:
         return self.mem_ranges
 
-    # @TODO: DTB only needed for Arm systems
-    def generate_dtb(self) -> None:
-        filename = self.workload.dtb_filename
-        self.generateDtb(filename)
+    def create_system_clocks(self, config: Config):
+        self.voltage_domain = m5_VoltageDomain(voltage=config.system.voltage)
+        self.clk_domain = m5_SrcClockDomain(
+            clock=config.system.clock, voltage_domain=self.voltage_domain
+        )
