@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 
 
 class NetworkRouter:
@@ -10,4 +10,4 @@ class NetworkRouter:
 
     @abstractmethod
     def get_router_id(self) -> int:
-        pass
+        """ """

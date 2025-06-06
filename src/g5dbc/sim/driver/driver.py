@@ -1,12 +1,19 @@
-from g5dbc.sim.model.board import AbstractBoardSystem
 from g5dbc.config import Config
-
-from g5dbc.sim.m5_objects.util import m5_instantiate, m5_simulate, m5_switchCpus, m5_curTick, m5_MaxTick, m5_disableAllListeners
 from g5dbc.sim.m5_objects.sim import m5_Root
+from g5dbc.sim.m5_objects.util import (
+    m5_curTick,
+    m5_disableAllListeners,
+    m5_instantiate,
+    m5_MaxTick,
+    m5_simulate,
+    m5_switchCpus,
+)
+from g5dbc.sim.model.board import AbstractBoardSystem
+
 
 class SimulationDriver:
 
-    def __init__(self, config: Config, system: AbstractBoardSystem ) -> None:
+    def __init__(self, config: Config, system: AbstractBoardSystem) -> None:
         self.system = system
         self.config = config
 
@@ -17,8 +24,8 @@ class SimulationDriver:
         if config.simulation.disable_listeners:
             print("Disabling Listeners")
             m5_disableAllListeners()
-        
-        self.root = m5_Root(system=system, full_system=config.simulation.full_system) 
+
+        self.root = m5_Root(system=system, full_system=config.simulation.full_system)
 
     def run(self):
         m5_instantiate()

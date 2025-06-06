@@ -30,9 +30,8 @@ class Simple2D(RubyTopology):
 
     def __init__(self, config: Config):
         assert config.network.topology.model == "Simple2D"
-        params = config.network.topology.parameters
 
-        self.config_topo = Options(**params)
+        self.config_topo = Options(**config.network.topology.parameters)
 
         self._num_cpus = config.system.num_cpus
         self._num_slcs = config.system.num_slcs

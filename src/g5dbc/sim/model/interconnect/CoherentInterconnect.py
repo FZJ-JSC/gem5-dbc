@@ -9,6 +9,7 @@ from g5dbc.sim.model.memory import AbstractMemSystem
 
 
 class CoherentInterconnect(m5_SubSystem):
+
     __metaclass__ = ABCMeta
 
     def __init__(self) -> None:

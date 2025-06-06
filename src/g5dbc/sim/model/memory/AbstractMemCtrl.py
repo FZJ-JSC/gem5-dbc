@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 
 from g5dbc.sim.m5_objects import m5_AddrRange
 

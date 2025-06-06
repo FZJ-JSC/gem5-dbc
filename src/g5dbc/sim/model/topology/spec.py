@@ -1,5 +1,6 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+
 
 class NodeType(Enum):
     CPU = 1
@@ -8,15 +9,22 @@ class NodeType(Enum):
     ROM = 4
     DMA = 5
 
+
 @dataclass
 class NodeSpec:
-    ctrl_id:   int = 0
+    ctrl_id: int = 0
     router_id: int = 0
-    numa_id:   int = 0
-    core_id:   int = 0
+    numa_id: int = 0
+    core_id: int = 0
     needs_exclusive_router: bool = False
+
     def __lt__(self, next):
-            return (self.numa_id,self.ctrl_id,self.core_id) < (next.numa_id,next.ctrl_id,next.core_id)
+        return (self.numa_id, self.ctrl_id, self.core_id) < (
+            next.numa_id,
+            next.ctrl_id,
+            next.core_id,
+        )
+
 
 @dataclass
 class RouterSpec:
@@ -25,7 +33,7 @@ class RouterSpec:
     nodes_per_router: int = 0
 
     def num_ctrls(self) -> int:
-         return self.nodes_per_router*len(self.router_ids)
+        return self.nodes_per_router * len(self.router_ids)
 
 
 @dataclass
@@ -34,5 +42,6 @@ class LinkSpec:
     dst: int
     latency: int
     weight: int = 1
+
     def __str__(self):
-         return f"link src={self.src} dst={self.dst} latency={self.latency} weight={self.weight}"
+        return f"link src={self.src} dst={self.dst} latency={self.latency} weight={self.weight}"

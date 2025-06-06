@@ -1,5 +1,3 @@
-from abc import ABCMeta, abstractmethod
-
 from g5dbc.config import Config
 from g5dbc.sim.m5_objects import m5_SrcClockDomain, m5_VoltageDomain
 from g5dbc.sim.m5_objects.sim import m5_SubSystem
@@ -8,7 +6,6 @@ from .AbstractCore import AbstractCore
 
 
 class AbstractProcessor(m5_SubSystem):
-    __metaclass__ = ABCMeta
     """
     Abstract Processor
     """

@@ -1,5 +1,3 @@
-from abc import ABCMeta, abstractmethod
-
 from g5dbc.sim.m5_objects import m5_AddrRange
 from g5dbc.sim.m5_objects.sim import m5_SubSystem
 
@@ -8,7 +6,6 @@ from .MultiChannelMem import MultiChannelMem
 
 
 class AbstractMemSystem(m5_SubSystem):
-    __metaclass__ = ABCMeta
 
     def __init__(self, mem_channels: list[MultiChannelMem]) -> None:
         super().__init__()

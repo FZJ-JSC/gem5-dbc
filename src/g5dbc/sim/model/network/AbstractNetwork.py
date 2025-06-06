@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 
 from g5dbc.sim.model.interconnect.ruby.node import AbstractNode
 from g5dbc.sim.model.topology import AbstractTopology
