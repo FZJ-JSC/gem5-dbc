@@ -50,7 +50,7 @@ def read(file: Path) -> dict:
     """
     with file.open("r", encoding="UTF-8") as stream:
         data = yaml.load(stream, Loader=ExtLoader)
-    return data
+    return data or dict()
 
 
 def write(file: Path, data: dict) -> dict:
@@ -63,6 +63,9 @@ def write(file: Path, data: dict) -> dict:
     Returns:
         dict: Python dict
     """
+    data = data or dict()
     with file.open("w", encoding="UTF-8", newline="") as stream:
-        yaml.safe_dump(data, stream, sort_keys=False, default_flow_style=False)
+        yaml.safe_dump(
+            data, stream, sort_keys=False, default_flow_style=False, width=1024
+        )
     return data

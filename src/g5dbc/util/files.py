@@ -2,29 +2,28 @@ import hashlib
 from pathlib import Path
 
 
-def find(name: str, *paths: Path, main="main", ext="py") -> Path | None:
+def find(name: str, *search_path: str, main="main", ext="py") -> Path | None:
     """Search for a file or subdirectory in a list of paths.
 
     Args:
         name (str): File or subdirectory name to search.
-        *paths: (Path): List of paths to search.
+        *search_path: (str): List of paths to search.
         main (str, optional): Default file name. Defaults to "main".
         ext (str, optional): Default file suffix. Defaults to "py".
 
     Returns:
         Path | None: Returns a Path object pointing to file if found, otherwise None
     """
-    search_path = [Path(".")]
-    search_path.extend(paths)
-    for p in search_path:
-        fname = p.joinpath(name)
-        if not fname.suffix:
-            if fname.is_dir():
-                fname = Path(p).joinpath(name, f"{main}.{ext}")
-            else:
-                fname = Path(p).joinpath(f"{name}.{ext}")
-        if fname.exists():
-            return fname.resolve()
+    if name != "":
+        for p in search_path:
+            fname = Path(p).joinpath(name)
+            if not fname.suffix:
+                if fname.is_dir():
+                    fname = Path(p).joinpath(name, f"{main}.{ext}")
+                else:
+                    fname = Path(p).joinpath(f"{name}.{ext}")
+            if fname.exists():
+                return fname.resolve()
     return None
 
 
