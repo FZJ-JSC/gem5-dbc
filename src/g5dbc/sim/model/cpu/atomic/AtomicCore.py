@@ -5,8 +5,16 @@ from ..AbstractCore import AbstractCore
 
 class AtomicCore(m5_AtomicSimpleCPU, AbstractCore):
 
-    def __init__(self, cpu_id: int = 0):
-        super().__init__(cpu_id=cpu_id)
+    def __init__(self, core_id: int = 0):
+        super().__init__(cpu_id=core_id)
+
+        self._core_id = core_id
+
+    def get_core_id(self) -> int:
+        return self._core_id
+
+    def get_mem_mode(self) -> str:
+        return self.memory_mode()
 
     def create_threads(self) -> None:
         self.createThreads()

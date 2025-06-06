@@ -43,21 +43,21 @@ class AbstractCore:
             _id = numa_id
         return _id
 
+    @abstractmethod
     def get_core_id(self) -> int:
         """Return core id
 
         Returns:
             int: Core id
         """
-        return self.cpu_id.value
 
+    @abstractmethod
     def get_mem_mode(self) -> str:
         """Return CPU model memory mode
 
         Returns:
             str: CPU model memory mode
         """
-        return self.memory_mode()
 
     @abstractmethod
     def create_threads(self) -> None:

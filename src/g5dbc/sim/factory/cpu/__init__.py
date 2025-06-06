@@ -10,13 +10,17 @@ from .bpred import BPredFactory
 
 class CoreFactory:
     @staticmethod
-    def create(cpu_conf: CPUConf, config: Config, cpu_id: int = 0) -> AbstractCore:
+    def create(cpu_conf: CPUConf, core_id: int = 0) -> AbstractCore:
         core: AbstractCore | None = None
         match cpu_conf.model:
             case "Arm":
-                core = Arm(cpu_id, cpu_conf, bp=BPredFactory.create(cpu_conf.bpred))
+                core = Arm(
+                    core_id=core_id,
+                    cpu_conf=cpu_conf,
+                    bp=BPredFactory.create(cpu_conf.bpred),
+                )
             case "AtomicSimple":
-                core = AtomicCore(cpu_id)
+                core = AtomicCore(core_id=core_id)
             case _:
                 raise ValueError(f"Platform model {cpu_conf.model} not available")
         return core
@@ -30,8 +34,8 @@ class ProcessorFactory:
             (
                 key,
                 [
-                    CoreFactory.create(cpu_conf, config, cpu_id)
-                    for cpu_id in range(num_cpus)
+                    CoreFactory.create(cpu_conf, core_id=core_id)
+                    for core_id in range(num_cpus)
                 ],
             )
             for key, cpu_conf in config.cpus.items()

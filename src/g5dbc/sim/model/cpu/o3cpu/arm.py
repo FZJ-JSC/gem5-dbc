@@ -55,6 +55,14 @@ class Arm(m5_ArmO3CPU, AbstractCore):
         if bp is not None:
             self.branchPred = bp
 
+        self._core_id = core_id
+
+    def get_core_id(self) -> int:
+        return self._core_id
+
+    def get_mem_mode(self) -> str:
+        return self.memory_mode()
+
     def create_threads(self) -> None:
         self.createThreads()
 
