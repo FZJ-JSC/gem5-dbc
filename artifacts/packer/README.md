@@ -30,7 +30,8 @@ git clone https://github.com/gem5/gem5.git
 scons -C gem5 --ignore-style -j $(nproc) gem5/build/ARM/gem5.fast
 
 # Add gem5 binary to local artifact index
-g5dbc --resource-add GEM5 gem5/build/ARM/gem5.fast
+g5dbc --resource-add gem5/build/ARM/gem5.fast --resource-type GEM5
+
 ```
 
 ### Create Linux image binaries using Packer

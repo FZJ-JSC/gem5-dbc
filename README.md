@@ -2,9 +2,20 @@
 
 A Declarative Benchmark Configuration Framework for architecture exploration with [gem5](https://www.gem5.org/).
 
+The gem5-dbc framework allows for a simplified gem5 simulation workflow.
+After installing, the `g5dbc` command line tool can be used to
+
+
+0. [Configure](#binary-artifact-configuration) required binary artifacts including full system simulation images.
+1. [Generate](#generate-simulation-scripts) a set simulation scripts from a [benchmark definition](#benchmark-specification) and initial [architecture configuration](#initial-architecture-configuration).
+2. [Run](#run-generated-simulation-scripts) generated gem5 simulation scripts.
+3. [Parse](#parse-simulation-results) gem5 stats.txt output to flat json files.
+4. [Evaluate](#evaluate-parsed-results) parsed statistics to collect data of interest to a CSV file.
+
+Currently, benchmark configuration and simulation is only supported for the ARM ISA.
+Support for general ISAs will be implemented soon.
 
 ## Installation
-
 
 ### Install gem5-dbc using pip
 
@@ -15,35 +26,17 @@ Install gem5-dbc directly from the git repo
 pip install --user git+https://github.com/FZJ-JSC/gem5-dbc.git
 ```
 
-
 ## Simulation Workflow
 
-The gem5-dbc framework allows for a simplified gem5 simulation workflow.
-In the following, we describe the simulation workflow in detail.
+In the following, we describe the simulation workflow in more detail.
 
-As a first prerequisite, required binary artifacts need to be generated.
+<!-- Binary artifacts required for full system simulations need to be configured.-->
 
-0. [Generate](#artifact-generation-and-configuration) required binary artifacts including full system simulation images.
+## Binary artifact configuration
 
-After installing gem5-dbc, the `g5dbc` command line tool can be used to
+To use gem5-dbc, you need a working installation of the [gem5](https://www.gem5.org/) computer architecture simulator.
 
-1. [Add](#add-gem5-binary-to-gem5-artifact-registry) gem5 simulator binaries to a local gem5 binary registry
-2. [Generate](#generate-simulation-scripts) a set simulation scripts for a specific benchmark definition and initial architecture configuration
-3. [Parse](#parse-simulation-results) gem5 stats.txt output to flat json files
-4. [Evaluate](#evaluate-parsed-results) parsed statistics to collect data of interest to a CSV file 
-
-Currently, benchmark configuration and simulation is only supported for the ARM ISA.
-Support for general ISAs will be implemented soon.
-
-
-## Artifact generation and configuration
-
-To use gem5-dbc, you need a working installation of
-the [gem5](https://www.gem5.org/) computer architecture simulator.
-
-You also need to provide all binary artifacts
-required for configuring and running a full system simulation.
-
+You also need to provide all binary artifacts required for configuring and running a full system simulation.
 
 ### Compile gem5 binary
 
@@ -58,18 +51,19 @@ scons -C gem5 --ignore-style -j $(nproc) gem5/build/ARM/gem5.fast
 
 ### Add gem5 binary to gem5 artifact registry
 
-Add gem5 binary to the local user artifact registry using `g5dbc --resource-add GEM5 <PATH>` 
+Add gem5 binary to the local user artifact registry with the command `g5dbc --resource-add <PATH> --resource-type GEM5` 
 
 ```bash
 # Add gem5 binary to user artifact registry
-g5dbc --resource-add GEM5 gem5/build/ARM/gem5.fast
+g5dbc --resource-add gem5/build/ARM/gem5.fast --resource-type GEM5
 ```
 
-<details>
-<summary>Local gem5 Artifact Registry</summary>
+When adding a gem5 binary for the first time, an artifact registry
+is created by default in your platform’s local user configuration directory,
+for example: `$HOME/.config/gem5-dbc/artifacts.yaml`.
 
-When adding a gem5 binary for the first time,
-an artifact registry is created, located by default at `$HOME/.config/gem5-dbc/artifacts.yaml`
+<details>
+<summary>Example user artifact registry</summary>
 
 ```yaml
 arm64:
@@ -80,7 +74,60 @@ arm64:
   path: /home/user/sources/gem5/build/ARM/gem5.fast
   version: 24.1.0.2
 ```
+
 </details>
+
+### Artifact registry
+
+An *artifact registry* is a collection of artifact lists, each indexed by an architecture name (e.g. `arm64`).
+Each list contains entries describing individual artifacts using a set of key-value pairs, as detailed below:
+
+| Key | Description |
+| ---- | ----------- |
+| name     | Artifact name identifier. |
+| path     |   Relative or absolute path to the binary or image file. |
+| bintype  | The type of artifact (DISK, BOOT, KERNEL,GEM5).  |
+| version  |  The version label or tag of the artifact.  |
+| md5hash  | The MD5 checksum used for integrity verification.   |
+| metadata | Additional context, such as the disk image root partition (e.g. `/dev/vda2`) or kernel boot parameters.  |
+
+
+### Add Linux Binary Artifacts for Full System Simulation
+
+If you already have binary artifacts available for use with gem5 full-system simulation,
+you can add them via the command line, either to your user artifact registry
+or to a separate registry file.
+
+Using separate registry files is recommended when working with multiple sets of binary images,
+as each set can be described by its own independent registry.
+
+Example commands are listed below.
+
+```bash
+# Add Linux Image
+# For DISK artifacts, gem5-dbc uses the metadata field to speficy the correct root partition.
+g5dbc -a arm64/disks/disk.img -A arm64 -T DISK -N disk.img -V debian -M /dev/vda2 -i index.yaml
+
+# Add Linux Kernel
+# For KERNEL artifacts, gem5-dbc uses the metadata field to speficy kernel boot parameters
+g5dbc -a arm64/binaries/vmlinux-5.15.68 -A arm64 -T KERNEL -N vmlinux -V 5.15.68 -M "earlyprintk=pl011,0x1c090000 console=ttyAMA0 lpj=19988480 norandmaps rw loglevel=8" -i index.yaml
+
+# Add ARM64 Bootloader
+# For BOOT artifacts, gem5-dbc uses the version field to select correct bootloader for selected platform
+g5dbc -a arm64/binaries/boot.arm64 -A arm64 -T BOOT -N boot.arm64 -V V1 -i index.yaml
+
+# Add ARM64 Bootloader
+# For BOOT artifacts, gem5-dbc uses the version field to select correct bootloader for selected platform
+g5dbc -a arm64/binaries/boot_v2.arm64 -A arm64 -T BOOT -N boot.arm64 -V V2 -i index.yaml
+
+```
+
+For `DISK` artifacts, gem5-dbc uses the `metadata` field to specify the correct root partition.
+
+For `KERNEL` artifacts, gem5-dbc uses the `metadata` field to specify kernel boot parameters.
+
+For `BOOT` artifacts, gem5-dbc uses the `version` field to select the appropriate bootloader for the selected platform.
+
 
 ### Generate Linux Binary Artifacts for Full System Simulation with gem5
 
@@ -321,7 +368,7 @@ Generate the simulation scripts using 4 threads, `--nprocs 4`.
 ```bash
 # Generate simulation scripts for stream/mini_triad benchmark and example garnet configuration
 # Include $ARTIFACTS directory containing artifacts.yaml index
-g5dbc --generate stream/mini_triad --init-config garnet --artifacts-dir $ARTIFACTS --nprocs 4
+g5dbc --generate stream/mini_triad --init-config garnet --artifact-index $ARTIFACTS --nprocs 4
 ```
 
 The command will generate simulation scripts under `mini_triad/work`.
@@ -334,6 +381,9 @@ Each subdirectory is labeled by an integer `$benchId`, and contains the followin
 | `$benchName/work/$benchId/work.sh`       | Shell script to execute under Full System Simulation  |
 | `$benchName/work/$benchId/config.yaml`   | Architecture configuration file for `$benchId`  |
 
+
+## Run generated simulation scripts
+
 The `srun.sh` script is generated from a [template](share/gem5-dbc/templates/srun.sh)
 which can be modified to run simulations in a cluster environment, for example.
 
@@ -341,7 +391,7 @@ To run the first 10 benchmarks on the local machine, you may use the command lin
 
 ```bash
 # Run the first 10 benchmarks
-for i in  $(seq 0 9) ; do ./mini_triad/work/0$i/srun.sh & done
+for i in {00..09} ; do ./mini_triad/work/$i/srun.sh & done
 ```
 
 
@@ -364,8 +414,8 @@ From the parsed JSON files we can generate a CSV file with relevant data,
 as implemented in `get_data_rows`:
 
 ```bash
-# Parse the generated benchmark statistics to flat JSON
-g5dbc --parse mini_triad --nprocs 4
+# Evaluate the parsed results and write relevant data to a CSV file.
+g5dbc --eval mini_triad --nprocs 4
 ```
 
 The command will generate a file `$benchName/parsed/data.csv`
