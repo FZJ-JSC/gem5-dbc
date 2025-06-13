@@ -1,6 +1,6 @@
 # Example configuration with Garnet interconnect and DDR4 memory model
 simulation:
-  gem5_version: 24.1.0.2
+  gem5_version: 24.1.0.3
   full_system: True
 
 system:

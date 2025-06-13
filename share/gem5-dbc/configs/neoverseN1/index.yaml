@@ -2,7 +2,7 @@
 # Based on the O3_ARM_Neoverse_N1.py configuration by Bine Brank
 # https://github.com/binebrank/gem5/blob/neoverse_model/configs/common/cores/arm/O3_ARM_Neoverse_N1.py
 simulation:
-  gem5_version: 24.1.0.2
+  gem5_version: 24.1.0.3
   full_system: True
 
 system:
