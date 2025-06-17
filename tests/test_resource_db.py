@@ -20,19 +20,19 @@ _resource = """\
 def test_resource_db_add(tmp_path: Path):
     bench_dir = tmp_path / "curr" / "bench" / "work"
     artfs_dir = tmp_path / "artifacts" / "arm64" / "objects"
-    config_dir = tmp_path / "user" / "config"
+    conf_dir = tmp_path / "user" / "config"
     data_dir = tmp_path / "user" / "shared"
 
     bench_dir.mkdir(parents=True)
     artfs_dir.mkdir(parents=True)
-    config_dir.mkdir(parents=True)
+    conf_dir.mkdir(parents=True)
     data_dir.mkdir(parents=True)
 
     disk_file = tmp_path / "artifacts" / "arm64" / "objects" / "disk.img"
     boot_file = tmp_path / "artifacts" / "arm64" / "objects" / "boot.arm64-V2"
     linux_img = tmp_path / "artifacts" / "arm64" / "objects" / "vmlinux"
     index_yml = tmp_path / "artifacts" / "index.yaml"
-    file4 = config_dir / "artifacts.yaml"
+    file4 = conf_dir / "artifacts.yaml"
     file5 = bench_dir / "work.yaml"
 
     disk_file.touch()
@@ -52,8 +52,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_0 = _arch + _resource.format(T, N, V, M, a)
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -72,8 +72,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_0 = _arch + _resource.format(T, N, V, M, a.relative_to(i))
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -91,8 +91,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_0 = _arch + _resource.format(T, N, V, M, a)
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -110,8 +110,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_0 = _arch + _resource.format(T, N, V, M, a)
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -129,8 +129,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_1 = _arch + _resource.format(T, N, V, M, a.relative_to(i))
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -148,8 +148,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_2 = expect_1 + _resource.format(T, N, V, M, a.relative_to(i))
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -168,8 +168,8 @@ def test_resource_db_add(tmp_path: Path):
     expect_4 = expect_1 + _resource.format(T, N, V, M, a.relative_to(i))
     resource_add(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
@@ -181,8 +181,8 @@ def test_resource_db_add(tmp_path: Path):
     cmd_line = f"-d {d} -i {i}".split()
     resource_del(
         from_args(
-            user_conf_dir=str(config_dir),
-            user_data_dir=str(data_dir),
+            conf_dir=conf_dir,
+            data_dir=data_dir,
             args=cmd_line,
         )
     )
