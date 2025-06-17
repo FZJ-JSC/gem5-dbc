@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from platformdirs import user_config_dir, user_data_dir
 
 from .manager import (
@@ -14,10 +16,17 @@ from .manager import (
 def main():
     appname = "gem5-dbc"
 
+    conf_dir = Path(user_config_dir(appname))
+    data_dir = Path(user_data_dir(appname))
+
+    # Create local user configuration directory if it does not exist
+    if not conf_dir.exists():
+        conf_dir.mkdir(parents=True, exist_ok=True)
+
     # Read command line options
     opts = options.from_args(
-        user_conf_dir=user_config_dir(appname),
-        user_data_dir=user_data_dir(appname),
+        conf_dir=conf_dir,
+        data_dir=data_dir,
     )
 
     # Match command

@@ -5,13 +5,13 @@ from .options import Options
 from .parse_args import parse_args
 
 
-def from_args(user_conf_dir: str = "", user_data_dir: str = "", args=None) -> Options:
+def from_args(conf_dir: Path, data_dir: Path, args=None) -> Options:
     """Construct Options from command line arguments
 
     Args:
-        user_conf_dir (str, optional): Local user configuration directory. Defaults to "".
-        user_data_dir (str, optional): Local user shared data directory. Defaults to "".
-        args (_type_, optional): Command line arguments. Defaults to None.
+        conf_dir (Path): Local user configuration directory
+        data_dir (Path): Local user shared data directory
+        args (_type_, optional):  Command line arguments. Defaults to None.
 
     Raises:
         SystemExit: Exits on error
@@ -19,9 +19,6 @@ def from_args(user_conf_dir: str = "", user_data_dir: str = "", args=None) -> Op
     Returns:
         Options: Constructed Options instance
     """
-
-    conf_dir = Path(user_conf_dir)
-    data_dir = Path(user_data_dir)
 
     opts = Options(**parse_args(data_dir=data_dir, args=args))
 
@@ -100,9 +97,11 @@ def from_args(user_conf_dir: str = "", user_data_dir: str = "", args=None) -> Op
         opts.init_config = str(config_path)
 
         artifact_index = []
+
         path = conf_dir.joinpath("artifacts.yaml")
         if path.exists():
             artifact_index.append(str(path))
+
         for f in opts.artifact_index:
             path = files.find(
                 f,
