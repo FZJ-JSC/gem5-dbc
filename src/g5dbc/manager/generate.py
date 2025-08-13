@@ -9,7 +9,7 @@ from ..util import dict_csv, files
 from .benchmark import load_benchmark
 from .config_file import read_config_file, write_config_file
 from .options import Options
-from .resources import artifact_db
+from .resources import read_artifact_index
 
 
 def generate_bench_id(data: list[dict]) -> list[dict]:
@@ -119,11 +119,11 @@ def generate_workload(opts: Options):
     """
 
     # Instantiate benchmark
-    bm = load_benchmark(opts, Path(opts.generate))
+    bm: AbstractBenchmark = load_benchmark(Path(opts.generate))
 
     # Read default benchmark configuration with artifacts
     config = read_config_file(
-        Path(opts.init_config), artifacts=artifact_db.read_files(opts.artifact_index)
+        Path(opts.init_config), artifacts=read_artifact_index(opts)
     )
 
     # Base directory

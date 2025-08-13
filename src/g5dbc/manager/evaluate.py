@@ -21,7 +21,7 @@ def evaluate_results(opts: Options):
     """
 
     # Instantiate benchmark
-    bm: AbstractBenchmark = load_benchmark(opts, Path(opts.evaluate))
+    bm: AbstractBenchmark = load_benchmark(Path(opts.evaluate))
     # Get benchmark name
     name = bm.name
     # Get parser output directory

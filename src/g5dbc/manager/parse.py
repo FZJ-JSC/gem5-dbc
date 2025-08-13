@@ -64,7 +64,7 @@ def parse_workload(opts: Options):
     """
 
     # Instantiate benchmark
-    bm = load_benchmark(opts, Path(opts.parse))
+    bm: AbstractBenchmark = load_benchmark(Path(opts.parse))
 
     # Set benchmark work and parsed directory
     workld_dir = Path(opts.output_dir).joinpath(opts.workld_dir)

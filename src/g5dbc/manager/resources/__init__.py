@@ -1,3 +1,2 @@
-from .artifact_db import read_files
-from .resource_add import resource_add
-from .resource_del import resource_del
+from .index import read_artifact_index
+from .resource import resource_add, resource_del

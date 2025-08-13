@@ -1,16 +1,13 @@
 import inspect
 from pathlib import Path
 
-from ..benchmark import AbstractBenchmark
 from ..util import load_mod
-from .options import Options
 
 
-def load_benchmark(opts: Options, path: Path | None) -> AbstractBenchmark:
+def load_benchmark(path: Path | None):
     """Load AbstractBenchmark implementation from given Python module
 
     Args:
-        opts (Options): Command line options
         path (Path | None): Path to benchmark Python module
 
     Raises:
@@ -52,6 +49,4 @@ def load_benchmark(opts: Options, path: Path | None) -> AbstractBenchmark:
     if bench_cls is None:
         raise SystemExit(f"No Benchmark class found in Python module.")
 
-    b: AbstractBenchmark = bench_cls(param_cls=param_cls)
-
-    return b
+    return bench_cls(param_cls=param_cls)

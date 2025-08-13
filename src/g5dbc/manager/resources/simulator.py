@@ -2,13 +2,13 @@ import re
 import subprocess
 from pathlib import Path
 
-from ...util import files
 from ..options import Options
 
 
 def add_simulator(opts: Options) -> tuple[str, dict[str, str]]:
 
     resource_path = Path(opts.resource_add).resolve()
+    md5hash = opts.resource_hash
 
     arch = None
     ver = ""
@@ -42,7 +42,7 @@ def add_simulator(opts: Options) -> tuple[str, dict[str, str]]:
         bintype="GEM5",
         name=resource_path.name,
         path=str(resource_path),
-        md5hash=opts.resource_hash,
+        md5hash=md5hash,
         version=ver,
         metadata=meta,
     )
