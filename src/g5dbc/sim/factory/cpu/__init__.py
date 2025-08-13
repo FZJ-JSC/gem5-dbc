@@ -1,5 +1,4 @@
 from g5dbc.config import Config
-from g5dbc.config.cpus import CPUConf
 from g5dbc.sim.model.cpu.AbstractCore import AbstractCore
 from g5dbc.sim.model.cpu.AbstractProcessor import AbstractProcessor
 from g5dbc.sim.model.cpu.atomic.AtomicCore import AtomicCore
@@ -10,13 +9,14 @@ from .bpred import BPredFactory
 
 class CoreFactory:
     @staticmethod
-    def create(cpu_conf: CPUConf, core_id: int = 0) -> AbstractCore:
-        core: AbstractCore | None = None
+    def create(config: Config, cpu_name: str, core_id: int = 0) -> AbstractCore:
+        cpu_conf = config.cpus[cpu_name]
         match cpu_conf.model:
             case "Arm":
                 core = Arm(
+                    config=config,
+                    cpu_name=cpu_name,
                     core_id=core_id,
-                    cpu_conf=cpu_conf,
                     bp=BPredFactory.create(cpu_conf.bpred),
                 )
             case "AtomicSimple":
@@ -32,13 +32,13 @@ class ProcessorFactory:
         num_cpus = config.system.num_cpus
         core_group = dict(
             (
-                key,
+                cpu_name,
                 [
-                    CoreFactory.create(cpu_conf, core_id=core_id)
+                    CoreFactory.create(config, cpu_name, core_id=core_id)
                     for core_id in range(num_cpus)
                 ],
             )
-            for key, cpu_conf in config.cpus.items()
+            for cpu_name in config.cpus.keys()
         )
 
         return AbstractProcessor(

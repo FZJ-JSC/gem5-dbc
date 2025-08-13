@@ -57,6 +57,11 @@ class AbstractProcessor(m5_SubSystem):
         core_group = self._core_group[active_key]
         return core_group[0].get_mem_mode()
 
+    def set_workload(self, process):
+        for key, cores in self._core_group.items():
+            for core in cores:
+                core.set_workload(process)
+
     def switch_next(self) -> list[tuple[AbstractCore, AbstractCore]]:
         curr_key = self._group_keys[self._active_idx]
         next_key = self._group_keys[self._active_idx + 1]

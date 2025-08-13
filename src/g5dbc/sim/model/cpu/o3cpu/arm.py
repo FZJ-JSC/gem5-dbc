@@ -1,4 +1,5 @@
-from g5dbc.config.cpus import CoreFUDesc, CPUConf
+from g5dbc.config import Config
+from g5dbc.config.cpus import CoreFUDesc
 from g5dbc.sim.m5_objects.cpu import (
     m5_ArmO3CPU,
     m5_FUDesc,
@@ -41,7 +42,8 @@ class AbstractFUPool(m5_FUPool):
 
 class Arm(m5_ArmO3CPU, AbstractCore):
 
-    def __init__(self, core_id: int, cpu_conf: CPUConf, bp=None):
+    def __init__(self, config: Config, cpu_name: str, core_id: int, bp=None):
+        cpu_conf = config.cpus[cpu_name]
         if cpu_conf.core is None:
             raise ValueError("Core config unavailable")
         _attr = {
@@ -56,6 +58,8 @@ class Arm(m5_ArmO3CPU, AbstractCore):
             self.branchPred = bp
 
         self._core_id = core_id
+        self._fs = config.simulation.full_system
+        self._sve_vl = int(config.system.sve_vl) // 128
 
     def get_core_id(self) -> int:
         return self._core_id
@@ -65,6 +69,7 @@ class Arm(m5_ArmO3CPU, AbstractCore):
 
     def create_threads(self) -> None:
         self.createThreads()
+        self.set_isa_attr("sve_vl_se", self._sve_vl)
 
     def connect_interrupt(self) -> None:
         self.createInterruptController()
@@ -78,3 +83,7 @@ class Arm(m5_ArmO3CPU, AbstractCore):
     def connect_walker_ports(self, port1, port2) -> None:
         self.mmu.dtb_walker.port = port1
         self.mmu.itb_walker.port = port2
+
+    def set_isa_attr(self, attr, val) -> None:
+        for j in range(self.numThreads):
+            setattr(self.isa[j], attr, val)

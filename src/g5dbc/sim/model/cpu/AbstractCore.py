@@ -28,6 +28,14 @@ class AbstractCore:
         """
         self.clk_domain = clock
 
+    def set_workload(self, workload) -> None:
+        """Set workload for SE mode
+
+        Args:
+            workload: SE mode workload
+        """
+        self.workload = workload
+
     def set_numa_id(self, numa_id: int) -> int:
         """Set core NUMA id if supported
 

@@ -19,3 +19,6 @@ class SimulationConf:
     disable_listeners: bool = True
     se_cmd: list[str] = field(default_factory=list)
     se_env: list[str] = field(default_factory=list)
+    se_stdin: str = "stdin"
+    se_stdout: str = "se.out"
+    se_stderr: str = "se.err"
