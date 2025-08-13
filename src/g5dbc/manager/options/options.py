@@ -26,4 +26,5 @@ class Options:
     parsed_dir: str
     parser_format: str
     nprocs: int
+    se_exec: str
     command: str = ""

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from ...util import sys_info
 from ..options import Options
 from . import artifact_db
 
@@ -10,5 +11,21 @@ def read_artifact_index(opts: Options) -> dict[str, list[dict[str, str]]]:
 
     if opts.artifact_index:
         artifacts = artifact_db.read_files(opts.artifact_index)
+    if opts.se_exec:
+        resource_path = Path(opts.se_exec).resolve()
+        arch = sys_info.get_local_architecture()
+        if opts.resource_arch:
+            arch = opts.resource_arch
+        l = artifacts.setdefault(arch, [])
+        l.append(
+            dict(
+                bintype="EXEC",
+                name=resource_path.name,
+                path=str(resource_path),
+                md5hash=opts.resource_hash,
+                version=opts.resource_version,
+                metadata=opts.resource_meta,
+            )
+        )
 
     return artifacts

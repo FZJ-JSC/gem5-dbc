@@ -93,6 +93,13 @@ def parse_args(data_dir: Path, args=None) -> dict:
         metavar="configuration.yaml",
     )
     parser.add_argument(
+        "--se-exec",
+        type=str,
+        default="",
+        help="Executable for SE simulation",
+        metavar="binary.exe",
+    )
+    parser.add_argument(
         "--parse",
         type=str,
         default="",

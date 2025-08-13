@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -17,3 +17,5 @@ class SimulationConf:
     max_tick: int | None = None
     max_seconds: int | None = None
     disable_listeners: bool = True
+    se_cmd: list[str] = field(default_factory=list)
+    se_env: list[str] = field(default_factory=list)

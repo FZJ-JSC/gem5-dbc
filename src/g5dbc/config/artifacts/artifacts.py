@@ -10,7 +10,8 @@ class BinaryType(Enum):
     GEM5 = 1
     DISK = 2
     BOOT = 3
-    KERNEL = 4
+    EXEC = 4
+    KERNEL = 5
 
 
 @dataclass

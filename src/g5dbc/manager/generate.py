@@ -81,19 +81,24 @@ def generate_work_directory(args: tuple[Options, AbstractBenchmark, str, dict]) 
     # Create output directory
     workld_dir.mkdir(parents=True, exist_ok=True)
 
-    # Write config params to local config file
-    config_file = workld_dir.joinpath("config.yaml")
-    config_file = write_config_file(config_file, config)
-
-    # Write work script
-    files.write_template(
-        workld_dir,
-        Path(opts.templates_dir).joinpath(config.simulation.work_script),
-        benchmark_cmd=bm.get_bench_command(config),
-        benchmark_env="\n".join(
-            ['export {}="{}"'.format(k, v) for k, v in bm.get_env_vars(config).items()]
-        ),
-    )
+    if config.simulation.full_system:
+        # Write work script
+        files.write_template(
+            workld_dir,
+            Path(opts.templates_dir).joinpath(config.simulation.work_script),
+            benchmark_cmd=bm.get_bench_command(config),
+            benchmark_env="\n".join(
+                [
+                    'export {}="{}"'.format(k, v)
+                    for k, v in bm.get_env_vars(config).items()
+                ]
+            ),
+        )
+    else:
+        config.simulation.se_cmd = bm.get_bench_command(config).split()
+        config.simulation.se_env = [
+            f"{k}={v}" for k, v in bm.get_env_vars(config).items()
+        ]
 
     # Write srun script
     files.write_template(
@@ -104,6 +109,10 @@ def generate_work_directory(args: tuple[Options, AbstractBenchmark, str, dict]) 
         gem5_workdir=workld_dir,
         gem5_output=config.simulation.output_log,
     ).chmod(0o744)
+
+    # Write config params to local config file
+    config_file = workld_dir.joinpath("config.yaml")
+    config_file = write_config_file(config_file, config)
 
     return 0
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ...util import files
+from ...util import files, sys_info
 from ..options import Options
 from . import artifact_db
 from .simulator import add_simulator
@@ -34,6 +34,14 @@ def resource_add(opts: Options):
                 arch, item = resource_item(opts)
             else:
                 arch, item = add_simulator(opts)
+
+        case "EXEC":
+            if not opts.resource_arch:
+                opts.resource_arch = sys_info.get_local_architecture()
+            if not opts.resource_name:
+                opts.resource_name = Path(opts.resource_add).name
+
+            arch, item = resource_item(opts)
 
         case "KERNEL" | "DISK" | "BOOT":
             if not opts.resource_arch:
