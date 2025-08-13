@@ -34,12 +34,16 @@ def write(file: Path, data: list[dict]) -> list[dict]:
     if not data:
         return data
 
+    fields = set()
+    for r in data:
+        fields.update(r.keys())
+
     with file.open("w", encoding="utf-8", newline="") as stream:
-        fields = data[0].keys()
         writer = csv.DictWriter(
             stream,
-            fieldnames=fields,
+            fieldnames=sorted([f for f in fields]),
             dialect="unix",
+            restval=float("nan"),
         )
         writer.writeheader()
         writer.writerows(data)
