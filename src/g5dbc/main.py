@@ -4,6 +4,7 @@ from platformdirs import user_config_dir, user_data_dir
 
 from .manager import (
     evaluate_results,
+    generate_artifact_index,
     generate_workload,
     options,
     parse_workload,
@@ -43,6 +44,8 @@ def main():
             evaluate_results(opts)
         case "validate":
             validate_config(opts)
+        case "generate_index_se":
+            generate_artifact_index(opts)
         case _:
             print("Please specify a command to execute. Use --help for more details.")
 

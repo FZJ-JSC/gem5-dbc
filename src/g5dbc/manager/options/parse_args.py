@@ -85,6 +85,13 @@ def parse_args(data_dir: Path, args=None) -> dict:
         metavar="benchmark.py",
     )
     parser.add_argument(
+        "--generate-index-se",
+        type=str,
+        default="",
+        help="Generate artifact index for SE mode simulation",
+        metavar="artifact_dir",
+    )
+    parser.add_argument(
         "-c",
         "--init-config",
         type=str,

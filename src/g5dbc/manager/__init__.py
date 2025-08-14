@@ -3,5 +3,5 @@ from .evaluate import evaluate_results
 from .generate import generate_workload
 from .options import Options
 from .parse import parse_workload
-from .resources import resource_add, resource_del
+from .resources import generate_artifact_index, resource_add, resource_del
 from .validate import validate_config

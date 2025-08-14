@@ -32,7 +32,7 @@ def read_files(index_files: list[str]) -> dict[str, list[dict[str, str]]]:
     return artifacts
 
 
-def add(index_file: Path, arch: str, item: dict[str, str]):
+def add(index_file: Path, arch: str, items: list[dict[str, str]]):
     """Add artifact to artifact index
 
     Args:
@@ -50,17 +50,19 @@ def add(index_file: Path, arch: str, item: dict[str, str]):
         index_db = dict_yaml.read(index_file)
 
     arch_objs = index_db.setdefault(arch, [])
-    idx = [i for i, obj in enumerate(arch_objs) if obj["path"] == item["path"]]
 
-    match len(idx):
-        case 0:
-            arch_objs.append(item)
-        case 1:
-            arch_objs[idx[0]] = item
-        case _:
-            raise SystemExit(
-                f"Artifact index file {index_file} has repeated entries with same filesystem path, please correct."
-            )
+    for item in items:
+        idx = [i for i, obj in enumerate(arch_objs) if obj["path"] == item["path"]]
+
+        match len(idx):
+            case 0:
+                arch_objs.append(item)
+            case 1:
+                arch_objs[idx[0]] = item
+            case _:
+                raise SystemExit(
+                    f"Artifact index file {index_file} has repeated entries with same filesystem path, please correct."
+                )
 
     dict_yaml.write(index_file, index_db)
 

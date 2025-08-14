@@ -12,6 +12,7 @@ class Options:
     resource_hash: str
     resource_version: str
     generate: str
+    generate_index_se: str
     init_config: str
     parse: str
     evaluate: str

@@ -24,6 +24,16 @@ def from_args(conf_dir: Path, data_dir: Path, args=None) -> Options:
 
     curr_dir = str(Path.cwd())
 
+    if opts.generate_index_se:
+        opts.command = "generate_index_se"
+
+        path = Path(opts.generate_index_se).resolve()
+        if not path.exists():
+            raise SystemExit(f"Could not find {path}.")
+        opts.generate_index_se = str(path)
+
+        return opts
+
     if opts.resource_add:
         opts.command = "resource_add"
 

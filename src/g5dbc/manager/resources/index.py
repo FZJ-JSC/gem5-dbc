@@ -1,3 +1,4 @@
+import stat
 from pathlib import Path
 
 from ...util import sys_info
@@ -29,3 +30,30 @@ def read_artifact_index(opts: Options) -> dict[str, list[dict[str, str]]]:
         )
 
     return artifacts
+
+
+def generate_artifact_index(opts: Options):
+    if opts.generate_index_se:
+        artifact_dir = Path(opts.generate_index_se)
+        arch = sys_info.get_local_architecture()
+        if opts.resource_arch:
+            arch = opts.resource_arch
+        items = []
+
+        for p in artifact_dir.rglob("*"):
+            if p.is_file():
+                bintype = "EXEC" if p.stat().st_mode & stat.S_IXUSR else "OBJECT"
+                path = str(p.relative_to(artifact_dir))
+                items.append(
+                    dict(
+                        bintype=bintype,
+                        name=str(path),
+                        path=str(path),
+                        md5hash="",
+                        version="",
+                        metadata="",
+                    )
+                )
+
+        index_path = artifact_dir.joinpath("index.yaml")
+        artifact_db.add(index_path, arch, items)

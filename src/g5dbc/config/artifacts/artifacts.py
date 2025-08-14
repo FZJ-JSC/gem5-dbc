@@ -12,6 +12,7 @@ class BinaryType(Enum):
     BOOT = 3
     EXEC = 4
     KERNEL = 5
+    OBJECT = 6
 
 
 @dataclass

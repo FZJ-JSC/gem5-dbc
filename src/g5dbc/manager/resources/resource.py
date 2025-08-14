@@ -19,14 +19,14 @@ def resource_item(opts: Options) -> tuple[str, dict[str, str]]:
 
 def resource_add(opts: Options):
 
-    idx = Path(opts.artifact_index[0])
+    artifact_index = Path(opts.artifact_index[0])
     res = Path(opts.resource_add)
 
     if not opts.resource_hash:
         opts.resource_hash = files.hash_md5(res)
 
-    if res.is_relative_to(idx.parent):
-        opts.resource_add = str(res.relative_to(idx.parent))
+    if res.is_relative_to(artifact_index.parent):
+        opts.resource_add = str(res.relative_to(artifact_index.parent))
 
     match opts.resource_type:
         case "GEM5":
@@ -58,14 +58,14 @@ def resource_add(opts: Options):
         case _:
             raise SystemExit(f"Resource type {opts.resource_type} unknown.")
 
-    artifact_db.add(idx, arch, item)
+    artifact_db.add(artifact_index, arch, [item])
 
 
 def resource_del(opts: Options):
-    idx = Path(opts.artifact_index[0])
+    artifact_index = Path(opts.artifact_index[0])
     path = Path(opts.resource_del)
 
-    if path.is_relative_to(idx.parent):
-        path = path.relative_to(idx.parent)
+    if path.is_relative_to(artifact_index.parent):
+        path = path.relative_to(artifact_index.parent)
 
-    artifact_db.remove(idx, path)
+    artifact_db.remove(artifact_index, path)
