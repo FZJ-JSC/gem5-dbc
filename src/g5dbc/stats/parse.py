@@ -2,6 +2,8 @@ import re
 from pathlib import Path
 from typing import Any, Iterator
 
+from ..util.files import open_file
+
 
 def parse_number_str(x: str | None, default="") -> int | float | str:
     if x is None:
@@ -97,7 +99,7 @@ def stats_line_generator(
         Iterator[tuple[int, list[str], str, Any]]: Returns a tuple of 4 elements: ROI number, performance counter path, performance counter key and performance counter value.
     """
 
-    with open(stats_file) as f:
+    with open_file(stats_file) as f:
         roi_id = 0
         is_roi = False
         for line in f:

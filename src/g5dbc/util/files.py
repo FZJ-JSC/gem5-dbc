@@ -1,5 +1,10 @@
+import bz2
+import gzip
 import hashlib
+import lzma
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Generator, TextIO
 
 
 def find(name: str, *search_path: str, main="main", ext="py") -> Path | None:
@@ -61,3 +66,32 @@ def write_template(output_dir: Path, template: Path, **kwargs) -> Path:
     else:
         output_file.write_bytes(template.read_bytes())
     return output_file
+
+
+@contextmanager
+def open_file(path: Path, mode="rt", encoding="utf-8") -> Generator[TextIO, None, None]:
+    """Open stats file according to file extension
+
+    Args:
+        path (Path): File Path
+        mode (str, optional): Read mode. Defaults to "rt".
+        encoding (str, optional): Encoding. Defaults to "utf-8".
+
+    Yields:
+        Generator[TextIO]: File Object
+    """
+    fh: TextIO
+    s = str(path)
+    if s.endswith((".xz", ".lzma")):
+        fh = lzma.open(path, mode, encoding=encoding)
+    elif s.endswith(".gz"):
+        fh = gzip.open(path, mode, encoding=encoding)
+    elif s.endswith(".bz2"):
+        fh = bz2.open(path, mode, encoding=encoding)
+    else:
+        fh = path.open(mode, encoding=encoding)
+
+    try:
+        yield fh
+    finally:
+        fh.close()

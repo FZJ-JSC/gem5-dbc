@@ -9,6 +9,11 @@ from .config_file import read_config_file
 from .options import Options
 
 
+def find_glob(path: Path, glob: str) -> Path | None:
+    l = sorted(p for p in path.glob(glob) if p.is_file() and p.stat().st_size > 0)
+    return l[0] if l else None
+
+
 def parse_results(args: tuple[Options, AbstractBenchmark, Path]) -> dict:
     """Parse simulation results directory
 
@@ -42,10 +47,15 @@ def parse_results(args: tuple[Options, AbstractBenchmark, Path]) -> dict:
 
     print(f"parse_results: Parsing {bench_id} to {output_file}")
 
-    parsed_rois = parser.parse_stats(
-        stats_params,
-        parsed_output,
-        stats_dir.joinpath(f"stats.txt"),
+    stat_name = find_glob(stats_dir, "stats.txt*")
+    parsed_rois = (
+        parser.parse_stats(
+            stats_params,
+            parsed_output,
+            stat_name,
+        )
+        if stat_name is not None
+        else dict()
     )
 
     for roi_id, roi_cols in parsed_rois.items():
@@ -81,15 +91,17 @@ def parse_workload(opts: Options):
     print(f"Parsing results for benchmark {bm.name}")
 
     stats_dirs = [
-        (f.name, f)
-        for f in workld_dir.iterdir()
-        if f.is_dir()
-        and f.joinpath("stats.txt").is_file()
-        and f.joinpath("stats.txt").stat().st_size > 0
-        and f.name not in parsed_ids
+        workld_dir.joinpath(d)
+        for d in set(
+            [
+                f.name
+                for f in workld_dir.iterdir()
+                if f.name not in parsed_ids and find_glob(f, "stats.txt*") is not None
+            ]
+        )
     ]
 
-    args_list = [(opts, bm, stats_dir) for _, stats_dir in stats_dirs]
+    args_list = [(opts, bm, stats_dir) for stats_dir in stats_dirs]
 
     with Pool(processes=opts.nprocs) as pool:
         for result in list(pool.imap_unordered(parse_results, args_list)):

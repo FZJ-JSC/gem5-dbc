@@ -108,6 +108,7 @@ def generate_work_directory(args: tuple[Options, AbstractBenchmark, str, dict]) 
         gem5_script=base_dir.joinpath(config.simulation.gem5_script),
         gem5_workdir=workld_dir,
         gem5_output=config.simulation.output_log,
+        compress_stats=opts.compress_stats,
     ).chmod(0o744)
 
     # Write config params to local config file

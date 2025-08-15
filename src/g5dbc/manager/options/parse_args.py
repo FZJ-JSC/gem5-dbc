@@ -182,6 +182,12 @@ def parse_args(data_dir: Path, args=None) -> dict:
         help="Parser output format",
     )
     parser.add_argument(
+        "--compress-stats",
+        type=str,
+        default="",
+        help="Command for stats output compression",
+    )
+    parser.add_argument(
         "--nprocs",
         type=int,
         default=1,

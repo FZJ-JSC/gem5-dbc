@@ -26,6 +26,7 @@ class Options:
     workld_dir: str
     parsed_dir: str
     parser_format: str
+    compress_stats: str
     nprocs: int
     se_exec: str
     command: str = ""
