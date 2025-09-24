@@ -1,14 +1,14 @@
-# NeoverseN1 configuration
+# NeoverseN1 configuration for SE
 # Based on the O3_ARM_Neoverse_N1.py configuration by Bine Brank
 # https://github.com/binebrank/gem5/blob/neoverse_model/configs/common/cores/arm/O3_ARM_Neoverse_N1.py
 simulation:
   gem5_version: 24.1.0.3
-  full_system: True
+  full_system: False
 
 system:
   architecture: arm64
-  num_cpus: 4
-  num_slcs: 4
+  num_cpus: 1
+  num_slcs: 1
   clock: 2.6GHz
   sve_vl: 256
   cache_line_size: 64
@@ -16,9 +16,6 @@ system:
   - o3cpu
 
 cpus:
-  simple:
-    model: AtomicSimple
-    clock: 2.6GHz
   o3cpu: !include cpu.yaml
 
 caches: !include caches.yaml
@@ -31,7 +28,7 @@ memory:
       dram_settings: !include ../memory/DDR4_2400_16x4.yaml
 
 interconnect:
-  model: garnet
-
-network: !include network.yaml
+  model: classic
+  classic:
+    slcs_per_core: 1
 
