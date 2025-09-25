@@ -1,5 +1,6 @@
 from g5dbc.config import Config
 from g5dbc.config.cpus import CoreFUDesc
+from g5dbc.sim.m5_objects import attr_type_check
 from g5dbc.sim.m5_objects.cpu import (
     m5_ArmO3CPU,
     m5_FUDesc,
@@ -47,7 +48,9 @@ class Arm(m5_ArmO3CPU, AbstractCore):
         if cpu_conf.core is None:
             raise ValueError("Core config unavailable")
         _attr = {
-            k: v for k, v in cpu_conf.core.to_dict().items() if hasattr(m5_ArmO3CPU, k)
+            k: attr_type_check(m5_ArmO3CPU, k, v)
+            for k, v in cpu_conf.core.to_dict().items()
+            if hasattr(m5_ArmO3CPU, k)
         }
         for k, v in cpu_conf.extra_parameters.items():
             if hasattr(m5_ArmO3CPU, k):
@@ -86,4 +89,5 @@ class Arm(m5_ArmO3CPU, AbstractCore):
 
     def set_isa_attr(self, attr, val) -> None:
         for j in range(self.numThreads):
+            setattr(self.isa[j], attr, val)
             setattr(self.isa[j], attr, val)

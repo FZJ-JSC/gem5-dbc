@@ -1,4 +1,5 @@
 from .addr import m5_Addr, m5_AddrRange
+from .attr_check import attr_type_check
 from .clock_voltage import (
     m5_ClockDomain,
     m5_SrcClockDomain,
