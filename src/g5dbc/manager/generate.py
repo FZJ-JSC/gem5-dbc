@@ -145,6 +145,9 @@ def generate_workload(opts: Options):
     # Create benchmark results directory
     workld_dir.mkdir(parents=True, exist_ok=True)
 
+    if opts.gem5_version:
+        config.simulation.gem5_version = opts.gem5_version
+
     # Write default configuration to base directory
     write_config_file(base_dir.joinpath("index.yaml"), config)
 

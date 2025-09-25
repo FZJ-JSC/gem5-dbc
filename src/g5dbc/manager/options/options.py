@@ -29,4 +29,5 @@ class Options:
     compress_stats: str
     nprocs: int
     se_exec: str
+    gem5_version: str
     command: str = ""

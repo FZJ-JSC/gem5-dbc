@@ -107,6 +107,12 @@ def parse_args(data_dir: Path, args=None) -> dict:
         metavar="binary.exe",
     )
     parser.add_argument(
+        "--gem5-version",
+        type=str,
+        default="",
+        help="Version of gem5 to use when generating simulation scripts",
+    )
+    parser.add_argument(
         "--parse",
         type=str,
         default="",
